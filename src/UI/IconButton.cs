@@ -47,15 +47,11 @@ namespace JobsHousingBalance.UI
                 name = "JobsHousingBalanceIconButton";
                 tooltip = "Jobs-Housing Balance";
 
-                // Use game's default atlas for a visible background
+                // Create circular background with custom color and border
                 var view = UIView.GetAView();
-                atlas = view.defaultAtlas;
-                normalBgSprite = "ButtonMenu";
-                hoveredBgSprite = "ButtonMenuFocused";
-                pressedBgSprite = "ButtonMenuPressed";
+                CreateCircularBackground();
 
                 // Ensure fully visible and above other UI
-                color = Color.white;
                 opacity = 1f;
                 isVisible = true;
                 isEnabled = true;
@@ -108,15 +104,17 @@ namespace JobsHousingBalance.UI
                         Debug.Log("JobsHousingBalance: Texture loaded, size: " + texture.width + "x" + texture.height);
 
                         // Render icon using UITextureSprite (no atlas) to avoid packing/render issues
+                        var iconSize = new Vector2(32, 32);
                         var icon = AddUIComponent<UITextureSprite>();
                         icon.texture = texture;
-                        icon.size = size;
-                        icon.relativePosition = Vector3.zero;
-                        icon.zOrder = this.zOrder + 1;
+                        icon.size = iconSize;
+                        // Center icon in the 48x48 button
+                        icon.relativePosition = new Vector3((size.x - iconSize.x) / 2f, (size.y - iconSize.y) / 2f);
+                        icon.zOrder = this.zOrder + 1; // Above background
                         icon.isInteractive = false;
                         icon.opacity = 1f;
 
-                        Debug.Log("JobsHousingBalance: UITextureSprite created; tex=" + (icon.texture != null ? (icon.texture.width + "x" + icon.texture.height) : "null") + ", size=" + icon.size + ", zOrder=" + icon.zOrder);
+                        Debug.Log("JobsHousingBalance: Icon UITextureSprite created; tex=" + (icon.texture != null ? (icon.texture.width + "x" + icon.texture.height) : "null") + ", size=" + icon.size + ", pos=" + icon.relativePosition);
 
                         Debug.Log("JobsHousingBalance: Icon loaded from embedded resources");
                         return;
@@ -137,6 +135,89 @@ namespace JobsHousingBalance.UI
             }
         }
         
+        private void CreateCircularBackground()
+        {
+            try
+            {
+                // Create a circular texture with fill color and border
+                var bgTexture = new Texture2D(BUTTON_SIZE, BUTTON_SIZE);
+                var colors = new Color32[BUTTON_SIZE * BUTTON_SIZE];
+                
+                var center = BUTTON_SIZE / 2f;
+                var radius = BUTTON_SIZE / 2f - 2f; // Leave space for border
+                var borderWidth = 2f;
+                
+                // Background color: 53555B
+                var fillColor = new Color32(0x53, 0x55, 0x5B, 230);
+                // Border color: 508A33
+                var borderColor = new Color32(0x50, 0x8A, 0x33, 255);
+                
+                for (int y = 0; y < BUTTON_SIZE; y++)
+                {
+                    for (int x = 0; x < BUTTON_SIZE; x++)
+                    {
+                        var dx = x - center;
+                        var dy = y - center;
+                        var dist = Mathf.Sqrt(dx * dx + dy * dy);
+                        
+                        int index = y * BUTTON_SIZE + x;
+                        
+                        if (dist > radius + borderWidth)
+                        {
+                            // Outside - transparent
+                            colors[index] = new Color32(0, 0, 0, 0);
+                        }
+                        else if (dist > radius)
+                        {
+                            // Border area
+                            colors[index] = borderColor;
+                        }
+                        else
+                        {
+                            // Inside - fill color
+                            colors[index] = fillColor;
+                        }
+                    }
+                }
+                
+                bgTexture.SetPixels32(colors);
+                bgTexture.Apply();
+                bgTexture.wrapMode = TextureWrapMode.Clamp;
+                bgTexture.filterMode = FilterMode.Bilinear;
+                
+                // Create atlas for circular background
+                var bgAtlas = ScriptableObject.CreateInstance<UITextureAtlas>();
+                var bgMaterial = new Material(Shader.Find("UI/Default"));
+                bgMaterial.mainTexture = bgTexture;
+                bgAtlas.material = bgMaterial;
+                bgAtlas.name = "JobsHousingBalanceCircularBgAtlas";
+
+                var bgSpriteInfo = new UITextureAtlas.SpriteInfo
+                {
+                    name = "CircularBg",
+                    texture = bgTexture,
+                    region = new Rect(0, 0, 1, 1)
+                };
+                bgAtlas.AddSprite(bgSpriteInfo);
+
+                // Render background as UITextureSprite child (same approach as icon)
+                var bgSprite = AddUIComponent<UITextureSprite>();
+                bgSprite.texture = bgTexture;
+                bgSprite.size = size;
+                bgSprite.relativePosition = Vector3.zero;
+                bgSprite.zOrder = this.zOrder; // Behind icon
+                bgSprite.isInteractive = false;
+                
+                // No sprite needed for button itself since we use child sprites
+                
+                Debug.Log("JobsHousingBalance: Circular background created as UITextureSprite; size=" + bgSprite.size);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("JobsHousingBalance: Exception creating circular background: " + ex.Message);
+            }
+        }
+
         private void AddTestBackground() { }
 
         private void AddFallbackLabel()
