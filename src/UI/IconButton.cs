@@ -8,6 +8,10 @@ namespace JobsHousingBalance.UI
     public class IconButton : UIButton
     {
         private const int BUTTON_SIZE = 48;
+        
+        // Dragging state
+        private bool isDragging = false;
+        private Vector3 dragOffset = Vector3.zero;
 
         public static IconButton Create()
         {
@@ -55,6 +59,7 @@ namespace JobsHousingBalance.UI
                 opacity = 1f;
                 isVisible = true;
                 isEnabled = true;
+                isInteractive = true;
                 zOrder = 10000;
                 clipChildren = false;
 
@@ -239,6 +244,61 @@ namespace JobsHousingBalance.UI
             catch (System.Exception ex)
             {
                 Debug.LogError("JobsHousingBalance: Exception adding fallback label: " + ex.Message);
+            }
+        }
+
+        // Mouse event handlers for dragging
+        protected override void OnMouseDown(UIMouseEventParameter p)
+        {
+            base.OnMouseDown(p);
+            
+            if (p.buttons == UIMouseButton.Left)
+            {
+                isDragging = true;
+                // Get mouse position in UI space (relative to parent/UIView)
+                Vector2 mouseInUISpace = GetUIView().ScreenPointToGUI(p.position);
+                dragOffset = new Vector3(mouseInUISpace.x - relativePosition.x, mouseInUISpace.y - relativePosition.y, 0);
+                Debug.Log($"JobsHousingBalance: Start drag - p.pos: ({p.position.x:F1}, {p.position.y:F1}), mouseUI: ({mouseInUISpace.x:F1}, {mouseInUISpace.y:F1}), relPos: ({relativePosition.x:F1}, {relativePosition.y:F1}), offset: ({dragOffset.x:F1}, {dragOffset.y:F1})");
+            }
+        }
+
+        protected override void OnMouseMove(UIMouseEventParameter p)
+        {
+            base.OnMouseMove(p);
+            
+            if (isDragging && p.buttons.IsFlagSet(UIMouseButton.Left))
+            {
+                // Convert mouse screen position to UI space
+                Vector2 mouseInUISpace = GetUIView().ScreenPointToGUI(p.position);
+                
+                // Calculate new relative position
+                Vector3 newPosition = new Vector3(
+                    mouseInUISpace.x - dragOffset.x,
+                    mouseInUISpace.y - dragOffset.y,
+                    0
+                );
+                
+                // Constrain to screen bounds
+                var view = UIView.GetAView();
+                if (view != null)
+                {
+                    newPosition.x = Mathf.Clamp(newPosition.x, 0, view.fixedWidth - size.x);
+                    newPosition.y = Mathf.Clamp(newPosition.y, 0, view.fixedHeight - size.y);
+                }
+                
+                // Update relative position
+                relativePosition = newPosition;
+            }
+        }
+
+        protected override void OnMouseUp(UIMouseEventParameter p)
+        {
+            base.OnMouseUp(p);
+            
+            if (isDragging)
+            {
+                isDragging = false;
+                Debug.Log("JobsHousingBalance: Drag ended, final position: " + absolutePosition);
             }
         }
     }
