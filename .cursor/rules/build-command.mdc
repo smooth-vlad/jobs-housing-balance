@@ -1,0 +1,16 @@
+---
+description: Build command for jobs-housing-balance project
+alwaysApply: true
+---
+
+When building this project, use the following command:
+
+```
+/Library/Frameworks/Mono.framework/Versions/6.12.0/bin/msbuild JobsHousingBalance.csproj /p:Configuration=Release
+```
+
+This is the correct path to msbuild on macOS for this project. The build tool is located in the Mono framework installation.
+
+Do NOT try other build methods (xbuild, dotnet, etc.). Use ONLY this specific msbuild path.
+
+**Note:** The build automatically copies the compiled DLL and PDB files to `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/` after compilation completes. No manual copying is required.

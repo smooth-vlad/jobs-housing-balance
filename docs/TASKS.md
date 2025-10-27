@@ -22,6 +22,7 @@
 - **Фреймворк для модификации**: Harmony (будет добавлен в Task 4)
 - **Путь к DLL игры**: `/Users/vladislav/Library/Application Support/Steam/steamapps/common/Cities_Skylines/Cities.app/Contents/Resources/Data/Managed/`
 - **Путь к папке модов**: `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/` (**ВАЖНО**: ~ вместо /)
+- **Путь к Harmony DLL**: `~/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/CitiesHarmony.dll`
 - **Компилятор**: Mono xbuild или msbuild
 - **Target Framework**: .NET Framework 3.5
 
@@ -42,7 +43,8 @@
   - `System.dll`, `System.Core.dll`
 - [x] Настроены пути к DLL в `<HintPath>` элементах
 - [x] Указан OutputPath для сборки в папку модов: `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/` (**ИСПРАВЛЕНО**: было `/Library`, должно быть `~/Library`)
-- [ ] **Замечание:** `0Harmony.dll` будет добавлен в следующих задачах (Task 4)
+- [x] **Замечание:** `CitiesHarmony.dll` нужно добавить в следующих задачах (Task 4)
+  - Путь: `~/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/CitiesHarmony.dll`
 
 #### 2. Metadata мода ✅
 - [x] Создан файл `Properties/AssemblyInfo.cs`
@@ -60,11 +62,15 @@
   - [x] `Description` property: "Shows visual overlay of jobs vs housing balance"
 - [x] Добавлены методы `OnEnabled()` и `OnDisabled()` с логированием
 
-#### 4. Инициализация Harmony
-- Создать класс `HarmonyPatcher` в `src/` или `src/Utils/`
-- В методе `OnEnabled()` применить Harmony патчи
-- В методе `OnDisabled()` удалить патчи
-- Добавить статический метод `ApplyPatches()` и `RemovePatches()`
+#### 4. Инициализация Harmony ✅
+- [x] Добавить reference на CitiesHarmony.dll и CitiesHarmony.Harmony.dll из Steam Workshop:
+  - Путь: `~/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/CitiesHarmony.dll`
+  - Путь: `~/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/CitiesHarmony.Harmony.dll`
+  - Mod ID: 2040656402 (Harmony)
+- [x] Создан класс `HarmonyPatcher` в `src/Utils/`
+- [x] В методе `OnEnabled()` применены Harmony патчи
+- [x] В методе `OnDisabled()` удаляются патчи
+- [x] Добавлены статические методы `ApplyPatches()` и `RemovePatches()`
 
 #### 5. Обработчик загрузки игры ✅
 - [x] Создан класс `LoadingExtension` наследующий `LoadingExtensionBase`
@@ -76,12 +82,12 @@
 - [x] `LoadingExtension` автоматически обнаруживается игрой (Cities: Skylines сам регистрирует все классы, наследующие `LoadingExtensionBase`)
 - [x] Добавлено логирование успешного запуска мода
 - [x] Убрана попытка ручной регистрации через `LoadingManager.AddLoadingExtension()` (неверный API)
-- [ ] Инициализация `HarmonyPatcher` будет в Task 4
+- [x] Инициализация `HarmonyPatcher` завершена в Task 4
 
 #### 7. Тестовая сборка и установка ✅
 - [x] Собран проект с помощью msbuild: `msbuild JobsHousingBalance.csproj /p:Configuration=Release`
 - [x] DLL создан в OutputPath: `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/`
-- [x] Размер DLL: 4.5KB (+ 1.4KB .pdb для отладки)
+- [x] Размер DLL: 6.0KB (+ 1.8KB .pdb для отладки)
 - [x] Формат: PE32 executable (DLL) for .NET/Mono
 - [x] Исправлен путь: было `/Library`, стало `~/Library` (домашняя папка пользователя)
 - [x] Проверка в игре: мод появился в списке модов ✅
@@ -101,7 +107,33 @@
 ✅ Мод не вызывает ошибок или крашей  
 ✅ Базовая структура готова для добавления UI и функционала
 
-**Статус:** MVP Task 1 (Базовая структура мода) **ЗАВЕРШЕНА**
+**Статус:** Все задачи MVP (Tasks 1-8) **ЗАВЕРШЕНЫ**, включая инициализацию Harmony (Task 4)
+
+## Логирование
+
+### Подход:
+Мод использует стандартное Unity логирование (`Debug.Log`, `Debug.LogWarning`, `Debug.LogError`) со всеми сообщениями, предваряемыми префиксом "JobsHousingBalance: ".
+
+### Как просматривать логи:
+Для просмотра логов мода используйте мод **ModTools** (2040656402):
+1. Установите ModTools через Steam Workshop
+2. В игре нажмите `F7` для открытия консоли мода
+3. Фильтруйте логи по префиксу "JobsHousingBalance"
+4. Все логи мода будут видны в реальном времени в консоли ModTools
+
+### Технические детали:
+
+**Сборка:**
+```bash
+/Library/Frameworks/Mono.framework/Versions/6.12.0/bin/msbuild JobsHousingBalance.csproj /p:Configuration=Release
+```
+
+**Путь установки DLL:**
+```
+~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/
+```
+
+**Размер DLL:** ~6KB
 
 ### Что НЕ нужно для MVP:
 

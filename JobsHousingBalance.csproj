@@ -26,7 +26,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>$(HOME)/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/</OutputPath>
+    <OutputPath>/Users/vladislav/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -56,6 +56,14 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Core">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="CitiesHarmony">
+      <HintPath>$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/CitiesHarmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="CitiesHarmony.Harmony">
+      <HintPath>$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/CitiesHarmony.Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

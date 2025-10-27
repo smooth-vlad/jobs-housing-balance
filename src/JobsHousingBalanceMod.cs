@@ -1,5 +1,6 @@
 using ICities;
 using UnityEngine;
+using JobsHousingBalance.Utils;
 
 namespace JobsHousingBalance
 {
@@ -12,11 +13,13 @@ namespace JobsHousingBalance
         public void OnEnabled()
         {
             Debug.Log("JobsHousingBalance: Mod enabled");
+            HarmonyPatcher.ApplyPatches();
         }
 
         public void OnDisabled()
         {
             Debug.Log("JobsHousingBalance: Mod disabled");
+            HarmonyPatcher.RemovePatches();
         }
     }
 }

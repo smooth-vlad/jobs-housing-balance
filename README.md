@@ -20,16 +20,10 @@ brew install mono
 
 ### На macOS
 
-Используйте xbuild (часть Mono):
+Используйте msbuild с конкретным путем:
 
 ```bash
-xbuild JobsHousingBalance.csproj /p:Configuration=Release
-```
-
-Или используйте msbuild (если установлен):
-
-```bash
-msbuild JobsHousingBalance.csproj /p:Configuration=Release
+/Library/Frameworks/Mono.framework/Versions/6.12.0/bin/msbuild JobsHousingBalance.csproj /p:Configuration=Release
 ```
 
 ### На Windows/Visual Studio
@@ -81,27 +75,50 @@ jobs-housing-balance/
 
 ## Зависимости
 
-Мод ссылается на следующие DLL из игры:
+Мод ссылается на следующие DLL:
+
+**Из игры (Cities: Skylines):**
 - `Assembly-CSharp.dll` - основные классы игры
 - `ColossalManaged.dll` - фреймворк разработчиков
 - `ICities.dll` - API для модов
 - `UnityEngine.dll` - Unity API
 - `UnityEngine.UI.dll` - UI компоненты Unity
 
-Эти DLL находятся в папке игры.
+**Из Steam Workshop (Harmony):**
+- `CitiesHarmony.dll` - обёртка Harmony для Cities: Skylines
+- `CitiesHarmony.Harmony.dll` - Harmony API
 
-## Замечания
+Все DLL находятся в соответствующих папках установки.
 
-- **0Harmony.dll**: Для задач 4+ потребуется установить Harmony. Добавьте его в проект или скачайте из Steam Workshop (mod ID: 2040656402)
-- **Target Framework**: .NET Framework 3.5 (совместим с Cities: Skylines)
+## Зависимости Harmony
+
+- **CitiesHarmony**: Мод использует CitiesHarmony из Steam Workshop:
+  - Путь на macOS: `~/Library/Application Support/Steam/steamapps/workshop/content/255710/2040656402/`
+  - Mod ID: 2040656402 (Harmony)
+  - Используемые DLL: `CitiesHarmony.dll` и `CitiesHarmony.Harmony.dll`
+  - **ВАЖНО**: Harmony должен быть установлен в игре для работы мода
+
+## Target Framework
+
+- .NET Framework 3.5 (совместим с Cities: Skylines)
+
+## Просмотр логов
+
+Мод использует стандартное Unity логирование. Для просмотра логов:
+
+1. Установите мод **ModTools** (ID: 2040656402) через Steam Workshop
+2. Запустите Cities: Skylines и загрузите мод в игру
+3. В игре нажмите `F7` для открытия консоли ModTools
+4. Фильтруйте логи по префиксу "JobsHousingBalance" для просмотра только логов этого мода
 
 ## Текущий статус
 
-✅ **Task 1 (Базовая структура мода) завершена:**
+✅ **MVP (Tasks 1-8) завершено:**
 - Мод успешно собирается и появляется в Content Manager
 - Базовые классы созданы: `JobsHousingBalanceMod` (IUserMod), `LoadingExtension`
-- Мод загружается без ошибок
-- Готов к дальнейшей разработке функционала
+- Harmony интеграция реализована: `HarmonyPatcher` класс создан
+- Мод загружается без ошибок и применяет Harmony патчи
+- Готов к дальнейшей разработке функционала визуализации
 
 ## Разработка
 
