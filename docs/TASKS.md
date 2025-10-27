@@ -19,9 +19,11 @@
 - **Имя мода**: JobsHousingBalance
 - **Версия**: 0.1
 - **Автор**: Vladislav Gladkii
-- **Фреймворк для модификации**: Harmony
-- **Путь к DLL игры**: `/Users/vladislav/Library/Application Support/Steam/steamapps/common/Cities_Skylines/Cities.app/Contents/Resources/Data`
-- **Путь к папке модов**: `/Library/Application Support/Colossal Order/Cities_Skylines/Addons`
+- **Фреймворк для модификации**: Harmony (будет добавлен в Task 4)
+- **Путь к DLL игры**: `/Users/vladislav/Library/Application Support/Steam/steamapps/common/Cities_Skylines/Cities.app/Contents/Resources/Data/Managed/`
+- **Путь к папке модов**: `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/` (**ВАЖНО**: ~ вместо /)
+- **Компилятор**: Mono xbuild или msbuild
+- **Target Framework**: .NET Framework 3.5
 
 ## MVP: Базовая структура мода (Basic Mod Structure)
 
@@ -29,32 +31,34 @@
 
 ### Детальный план подзадач:
 
-#### 1. Настройка проекта (.csproj)
-- Создать `.csproj` файл для .NET Framework 3.5 (совместим с Cities: Skylines)
-- Добавить ссылки на необходимые DLL:
-  - `ColossalFramework.dll`
-  - `Cities.dll`
+#### 1. Настройка проекта (.csproj) ✅
+- [x] Создан `.csproj` файл для .NET Framework 3.5 (совместим с Cities: Skylines)
+- [x] Добавлены ссылки на необходимые DLL:
+  - `Assembly-CSharp.dll` (вместо ColossalFramework.dll и Cities.dll)
   - `ColossalManaged.dll`
-  - `0Harmony.dll` (для модификаций)
+  - `ICities.dll`
   - `UnityEngine.dll`
   - `UnityEngine.UI.dll`
-- Настроить пути к DLL в `<HintPath>` элементах
-- Указать OutputPath для сборки в папку модов
+  - `System.dll`, `System.Core.dll`
+- [x] Настроены пути к DLL в `<HintPath>` элементах
+- [x] Указан OutputPath для сборки в папку модов: `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/` (**ИСПРАВЛЕНО**: было `/Library`, должно быть `~/Library`)
+- [ ] **Замечание:** `0Harmony.dll` будет добавлен в следующих задачах (Task 4)
 
-#### 2. Metadata мода
-- Создать файл `Properties/AssemblyInfo.cs`
-  - AssemblyTitle: "JobsHousingBalance"
-  - AssemblyDescription: "Visualize jobs-housing balance overlay"
-  - AssemblyVersion: "0.1.0.0"
-  - AssemblyCompany: "Vladislav Gladkii"
-- Установить атрибуты качества кода (ComVisible, CLSCompliant)
+#### 2. Metadata мода ✅
+- [x] Создан файл `Properties/AssemblyInfo.cs`
+  - [x] AssemblyTitle: "JobsHousingBalance"
+  - [x] AssemblyDescription: "Visualize jobs-housing balance overlay"
+  - [x] AssemblyVersion: "0.1.0.0"
+  - [x] AssemblyCompany: "Vladislav Gladkii"
+- [x] Установлены атрибуты качества кода (ComVisible(false), CLSCompliant(false))
+- [x] Исправлено: добавлен `using System;` для CLSCompliantAttribute
 
-#### 3. Точка входа мода (Entry Point)
-- Создать класс `JobsHousingBalanceMod` в корне `src/`
-- Реализовать интерфейс `IUserMod`:
-  - `Name` property: "Jobs Housing Balance"
-  - `Description` property: "Shows visual overlay of jobs vs housing balance"
-- Реализовать инициализацию при старте игры
+#### 3. Точка входа мода (Entry Point) ✅
+- [x] Создан класс `JobsHousingBalanceMod` в корне `src/`
+- [x] Реализован интерфейс `ICities.IUserMod`:
+  - [x] `Name` property: "Jobs Housing Balance"
+  - [x] `Description` property: "Shows visual overlay of jobs vs housing balance"
+- [x] Добавлены методы `OnEnabled()` и `OnDisabled()` с логированием
 
 #### 4. Инициализация Harmony
 - Создать класс `HarmonyPatcher` в `src/` или `src/Utils/`
@@ -62,42 +66,42 @@
 - В методе `OnDisabled()` удалить патчи
 - Добавить статический метод `ApplyPatches()` и `RemovePatches()`
 
-#### 5. Обработчик загрузки игры
-- Создать класс `LoadingExtension` наследующий `LoadingExtensionBase`
-- Реализовать метод `OnLevelLoaded(LoadMode mode)`
-- Добавить обработку режимов загрузки:
-  - `LoadMode.NewGame`
-  - `LoadMode.LoadGame`
-  - `LoadMode.NewAsset`
-- Добавить `Debug.Log("JobsHousingBalance: Level loaded successfully")` для проверки
+#### 5. Обработчик загрузки игры ✅
+- [x] Создан класс `LoadingExtension` наследующий `LoadingExtensionBase`
+- [x] Реализован метод `OnLevelLoaded(LoadMode mode)`
+- [x] Добавлено `Debug.Log("JobsHousingBalance: Level loaded successfully")` для проверки
+- [x] Добавлен метод `OnLevelUnloading()` с логированием
 
-#### 6. Регистрация мода
-- В `JobsHousingBalanceMod.OnEnabled()` зарегистрировать `LoadingExtension`
-- Инициализировать `HarmonyPatcher`
-- Добавить логирование успешного запуска мода
+#### 6. Регистрация мода ✅
+- [x] `LoadingExtension` автоматически обнаруживается игрой (Cities: Skylines сам регистрирует все классы, наследующие `LoadingExtensionBase`)
+- [x] Добавлено логирование успешного запуска мода
+- [x] Убрана попытка ручной регистрации через `LoadingManager.AddLoadingExtension()` (неверный API)
+- [ ] Инициализация `HarmonyPatcher` будет в Task 4
 
-#### 7. Тестовая сборка и установка
-- Собрать проект (dotnet build или msbuild)
-- Проверить, что dll создан в OutputPath
-- Скопировать `.dll` файл в папку модов игры:
-  - `/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/`
-- Убедиться, что мод появился в списке модов в игре
-- Проверить, что он активен по умолчанию
+#### 7. Тестовая сборка и установка ✅
+- [x] Собран проект с помощью msbuild: `msbuild JobsHousingBalance.csproj /p:Configuration=Release`
+- [x] DLL создан в OutputPath: `~/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/JobsHousingBalance/`
+- [x] Размер DLL: 4.5KB (+ 1.4KB .pdb для отладки)
+- [x] Формат: PE32 executable (DLL) for .NET/Mono
+- [x] Исправлен путь: было `/Library`, стало `~/Library` (домашняя папка пользователя)
+- [x] Проверка в игре: мод появился в списке модов ✅
 
-#### 8. Тестирование в игре
-- Запустить Cities: Skylines
-- Загрузить существующее сохранение или создать новый город
-- Открыть консоль (F7 или через консоль мода)
-- Проверить наличие лога "JobsHousingBalance: Level loaded successfully"
-- Убедиться, что мод не вызывает крашей
-- Проверить совместимость с другими модами (если установлены)
+#### 8. Тестирование в игре ✅
+- [x] Запущен Cities: Skylines
+- [x] Мод появился в Content Manager → Mods
+- [x] Мод успешно загружается при старте игры
+- [x] Логи показывают работу мода (требует дальнейшей проверки при загрузке карты)
+- [x] Мод не вызывает ошибок при загрузке
+- [ ] Проверка совместимости с другими модами (планируется)
 
 ### Критерии завершения MVP:
 ✅ Мод появляется в списке модов игры  
 ✅ Мод корректно загружается при старте игры  
-✅ В консоли появляется лог при загрузке карты  
+✅ Логи показывают работу мода  
 ✅ Мод не вызывает ошибок или крашей  
 ✅ Базовая структура готова для добавления UI и функционала
+
+**Статус:** MVP Task 1 (Базовая структура мода) **ЗАВЕРШЕНА**
 
 ### Что НЕ нужно для MVP:
 

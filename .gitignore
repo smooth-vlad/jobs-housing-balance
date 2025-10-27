@@ -1,0 +1,33 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# User-specific files
+*.rsuser
+
+# Mono auto generated files
+mono_crash.*
+
+# Compiled DLL files (do not include in repo)
+*.dll
+*.pdb
+
+# Exclude compiled mod from Addons folder (backup copies)
+../Addons/
