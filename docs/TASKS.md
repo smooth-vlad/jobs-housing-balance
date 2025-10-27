@@ -14,48 +14,101 @@
 - **Framework**: Mono framework для разработки
 - **IDE**: Cursor (VS Code fork)
 
-## MVP: Минимальная рабочая версия с логом на событие загрузки карты
+### Технические параметры (Technical Settings)
 
-Цель: Реализовать минимальный мод, который логирует событие загрузки карты в консоль игры.
+- **Имя мода**: JobsHousingBalance
+- **Версия**: 0.1
+- **Автор**: Vladislav Gladkii
+- **Фреймворк для модификации**: Harmony
+- **Путь к DLL игры**: `/Users/vladislav/Library/Application Support/Steam/steamapps/common/Cities_Skylines/Cities.app/Contents/Resources/Data`
+- **Путь к папке модов**: `/Library/Application Support/Colossal Order/Cities_Skylines/Addons`
 
-### Необходимые шаги для MVP:
+## MVP: Базовая структура мода (Basic Mod Structure)
 
-1. **Базовая структура мода** (из Task 1)
-   - Создать точку входа мода (entry point): создать класс, наследующий `LoadingExtensionBase` или реализующий `IModContainer`
-   - Настроить metadata мода: AssemblyInfo, modInfo, зависимости
-   - Добавить необходимые references: ColossalFramework.dll, Cities.dll, возможно Harmony если нужно
-   - Инициализировать мод при загрузке игры
+Цель: Реализовать минимальный мод, который логирует событие загрузки карты в консоль игры и инициализируется при запуске.
 
-2. **Обработчик события загрузки карты**
-   - Подписаться на событие загрузки карты (например, `LoadingManager.instance.m_metaData.m_updateMode == UpdateMode.LoadGame`)
-   - Альтернативно использовать событие `LevelLoaded` 
-   - В обработчике добавить простой Debug.Log вывод в консоль игры
+### Детальный план подзадач:
 
-3. **Минимальная инициализация**
-   - В обработчике события инициализировать основные компоненты мода
-   - Пока без UI — просто логирование
+#### 1. Настройка проекта (.csproj)
+- Создать `.csproj` файл для .NET Framework 3.5 (совместим с Cities: Skylines)
+- Добавить ссылки на необходимые DLL:
+  - `ColossalFramework.dll`
+  - `Cities.dll`
+  - `ColossalManaged.dll`
+  - `0Harmony.dll` (для модификаций)
+  - `UnityEngine.dll`
+  - `UnityEngine.UI.dll`
+- Настроить пути к DLL в `<HintPath>` элементах
+- Указать OutputPath для сборки в папку модов
 
-4. **Тестирование**
-   - Собрать мод, установить в папку модов игры
-   - Загрузить сохранение города и проверить консоль на наличие лога
+#### 2. Metadata мода
+- Создать файл `Properties/AssemblyInfo.cs`
+  - AssemblyTitle: "JobsHousingBalance"
+  - AssemblyDescription: "Visualize jobs-housing balance overlay"
+  - AssemblyVersion: "0.1.0.0"
+  - AssemblyCompany: "Vladislav Gladkii"
+- Установить атрибуты качества кода (ComVisible, CLSCompliant)
 
-### Порядок задач из TASKS.md для MVP:
+#### 3. Точка входа мода (Entry Point)
+- Создать класс `JobsHousingBalanceMod` в корне `src/`
+- Реализовать интерфейс `IUserMod`:
+  - `Name` property: "Jobs Housing Balance"
+  - `Description` property: "Shows visual overlay of jobs vs housing balance"
+- Реализовать инициализацию при старте игры
 
-- **Task 1 (частично)**: Создать базовую структуру мода и конфигурацию
-  - Точка входа мода
-  - Базовая инициализация
-  - Простое логирование
-  
-- **Task 9-10 (пока не нужно)**: UI элементы можно добавить позже, пока достаточно простого лога в консоль для отладки
+#### 4. Инициализация Harmony
+- Создать класс `HarmonyPatcher` в `src/` или `src/Utils/`
+- В методе `OnEnabled()` применить Harmony патчи
+- В методе `OnDisabled()` удалить патчи
+- Добавить статический метод `ApplyPatches()` и `RemovePatches()`
+
+#### 5. Обработчик загрузки игры
+- Создать класс `LoadingExtension` наследующий `LoadingExtensionBase`
+- Реализовать метод `OnLevelLoaded(LoadMode mode)`
+- Добавить обработку режимов загрузки:
+  - `LoadMode.NewGame`
+  - `LoadMode.LoadGame`
+  - `LoadMode.NewAsset`
+- Добавить `Debug.Log("JobsHousingBalance: Level loaded successfully")` для проверки
+
+#### 6. Регистрация мода
+- В `JobsHousingBalanceMod.OnEnabled()` зарегистрировать `LoadingExtension`
+- Инициализировать `HarmonyPatcher`
+- Добавить логирование успешного запуска мода
+
+#### 7. Тестовая сборка и установка
+- Собрать проект (dotnet build или msbuild)
+- Проверить, что dll создан в OutputPath
+- Скопировать `.dll` файл в папку модов игры:
+  - `/Library/Application Support/Colossal Order/Cities_Skylines/Addons/Mods/`
+- Убедиться, что мод появился в списке модов в игре
+- Проверить, что он активен по умолчанию
+
+#### 8. Тестирование в игре
+- Запустить Cities: Skylines
+- Загрузить существующее сохранение или создать новый город
+- Открыть консоль (F7 или через консоль мода)
+- Проверить наличие лога "JobsHousingBalance: Level loaded successfully"
+- Убедиться, что мод не вызывает крашей
+- Проверить совместимость с другими модами (если установлены)
+
+### Критерии завершения MVP:
+✅ Мод появляется в списке модов игры  
+✅ Мод корректно загружается при старте игры  
+✅ В консоли появляется лог при загрузке карты  
+✅ Мод не вызывает ошибок или крашей  
+✅ Базовая структура готова для добавления UI и функционала
 
 ### Что НЕ нужно для MVP:
 
 - Task 2: Утилиты для гексов
 - Task 3: Сбор данных
 - Task 4-5: Агрегация
-- Task 7: Рендеринг
-- Task 8: Контроллер/менеджер
-- Полноценный UI
+- Task 6: Нормализация и цветовое кодирование
+- Task 7: Система рендеринга оверлея
+- Task 8: Главный контроллер/менеджер
+- Task 9-10: UI элементы управления и панель
+- Полноценный функционал визуализации
 
 ## Основные задачи инфраструктуры
 
