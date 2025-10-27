@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+# Debugging Approach
+
+When a user reports an issue, don't assume - investigate systematically:
+
+## Process
+1 As the user diagnostic questions ("What do you see?", "What do logs show?")
+2 Give them specific tasks ("Check X and share the output")
+3 Explain what each step tells us ("If X appears, it means Y")
+4 Add debugging code when needed (logging, visible markers, test paths)
+5 Make one change at a time and verify before continuing
+
+## Principle
+Gather information → form hypothesis → test → analyze → iterate. Work with the user, not for them.

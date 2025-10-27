@@ -81,5 +81,8 @@
     <Folder Include="src\UI\Panel\" />
     <Folder Include="src\Utils\" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\icons8-demand-48.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
