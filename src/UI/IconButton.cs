@@ -9,6 +9,7 @@ namespace JobsHousingBalance.UI
     {
         private const int BUTTON_SIZE = 48;
         private const float DragThreshold = 6f; // pixels: less than this = click, more = drag
+        private const float ClickCooldown = 0.15f; // anti-spam cooldown
         
         // Dragging state
         private bool isDragging = false;
@@ -16,6 +17,7 @@ namespace JobsHousingBalance.UI
         private bool suppressNextClick = false;
         private Vector2 dragStartLocalInParent; // Mouse position in parent's local space at start
         private Vector2 dragStartRel;           // Starting button position
+        private float _nextClickAt;             // Click cooldown timer
 
         public static IconButton Create()
         {
@@ -85,6 +87,29 @@ namespace JobsHousingBalance.UI
 
                 // Load icon from embedded resources
                 LoadIconFromResources();
+
+                // Subscribe to click event (standard CS modding pattern)
+                eventClick += (c, p) =>
+                {
+                    // Suppress click if drag occurred
+                    if (suppressNextClick) 
+                    { 
+                        suppressNextClick = false; 
+                        p.Use(); 
+                        return; 
+                    }
+
+                    // Anti-spam cooldown
+                    if (Time.realtimeSinceStartup < _nextClickAt) 
+                    { 
+                        p.Use(); 
+                        return; 
+                    }
+                    _nextClickAt = Time.realtimeSinceStartup + ClickCooldown;
+
+                    OnButtonActivated();
+                    p.Use();
+                };
 
                 Debug.Log("JobsHousingBalance: Icon button initialized");
             }
@@ -263,6 +288,7 @@ namespace JobsHousingBalance.UI
             {
                 isDragging = true;
                 dragDistance = 0f;
+                suppressNextClick = false;
                 dragStartRel = relativePosition;
                 dragStartLocalInParent = ScreenToParentLocal(Input.mousePosition);
                 
@@ -297,8 +323,9 @@ namespace JobsHousingBalance.UI
             
             relativePosition = next;
             
-            // Accumulate distance to determine if this was a drag
-            dragDistance += delta.magnitude;
+            // Track total distance from start point to determine if this was a drag
+            Vector2 totalDelta = curLocal - dragStartLocalInParent;
+            dragDistance = totalDelta.magnitude;
             
             p.Use();
         }
@@ -319,18 +346,10 @@ namespace JobsHousingBalance.UI
             p.Use();
         }
         
-        protected override void OnClick(UIMouseEventParameter p)
+        private void OnButtonActivated()
         {
-            if (suppressNextClick)
-            {
-                // This was a drag - suppress the click
-                suppressNextClick = false;
-                p.Use();
-                return;
-            }
-            
-            base.OnClick(p);
-            // TODO: Open panel here
+            Debug.Log("[JobsHousingBalance] Button clicked!");
+            // TODO: Open panel (Task 9.4)
         }
         
         // Convert screen mouse pixels to parent's local coordinates
