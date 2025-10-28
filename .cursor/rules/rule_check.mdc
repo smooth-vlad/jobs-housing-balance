@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+- If you're asked to recall rules and can't remember them all, say "Memory check failed: I lost context of some rules." 
+- If you're asked to refresh rules, read .mdc
+- When starting a new task, verify you still have all rules in memory by saying "Rules in memory: [tick list 3 rule names]"
+- If I ask "rule check", list all rules you currently have in memory.
+- Do not list more than 3 rules in bullet points. Do not include .mdc file extension.
+- 4th line under rules must be the number of how many other rules are in your memory (if any).
+- List rules by oldest remembered (and closest to be being forgotten).
+-THIS MUST BE DONE FOR EVERY INTERACTION.

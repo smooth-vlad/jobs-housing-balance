@@ -43,8 +43,21 @@
 - ⏸️ При загрузке читать сохраненную позицию
 - ⏸️ Дефолтная позиция если не сохранена
 
+## Этап B 2.0 - В процессе
+
+### Фаза 1: Подготовка инфраструктуры
+- ✅ **1.1**: Расширение AppState (MetricType, EducationMode, IncludeServiceUnique, IncludeTeens)
+- ✅ **1.2**: Расширение BuildingSample (jobsCapacityTotal, jobsCapacityByEdu, residentsByEdu)
+- ✅ **1.3**: Обновление UI Layout (новые контролы, динамическая легенда)
+
+### Реализованные компоненты Этапа B 2.0
+- **AppState**: Новые enum'ы и свойства для Capacity/Edu-aware режимов
+- **BuildingSample**: Поля для capacity и education данных
+- **UI Controls**: Metric dropdown, IncludeServiceUnique checkbox, EduMode dropdown, IncludeTeens checkbox
+- **Dynamic Legend**: Автоматическое обновление легенды при смене режима метрики
+
 ## Планируемые этапы
-См. [TASKS.md](TASKS.md) для детального плана этапов B-F.
+См. [ETAP_B_2_0_PLAN.md](ETAP_B_2_0_PLAN.md) для детального плана Фаз 2-4.
 
 ## Технические детали
 
@@ -56,22 +69,29 @@
 - **Event-driven Architecture**: AppState ↔ UI ↔ OverlayRenderer через события
 - **Singleton Pattern**: Thread-safe реализация для AppState и OverlayManager
 - **Auto-sizing UI**: Автоматическая подгонка размеров панелей под контент
-- **Fixed-height Legend**: Фиксированная высота 380f для корректного отображения всех элементов
+- **Dynamic Legend**: Автоматическое обновление легенды при смене режима метрики
+- **Conditional UI**: EduMode dropdown появляется только в Edu-aware режиме
+- **Metric Types**: Поддержка Fact, Capacity, Edu-aware режимов
 
 ### Технические решения
 - **Mode dropdown**: "Hex" | "Districts" с правильной синхронизацией
 - **Hex size dropdown**: "64m" | "128m" | "256m" | "512m" с enum AppState.HexSize
 - **Opacity slider**: Диапазон 0.1-0.8 с преобразованием в проценты для отображения
-- **Legend**: Статичная панель с 4 цветовыми индикаторами и двухстрочным текстом
+- **Metric dropdown**: "Fact" | "Capacity" | "Edu-aware" с динамическим обновлением легенды
+- **IncludeServiceUnique checkbox**: Включен по умолчанию (true)
+- **IncludeTeens checkbox**: Выключен по умолчанию (false)
+- **EduMode dropdown**: "Strict" | "Substituted", появляется только в Edu-aware режиме
+- **Dynamic Legend**: Автоматическое обновление при смене режима метрики
 - **UI Layout**: Использование autoLayout с фиксированными размерами для стабильности
 
 ### Известные ограничения
 - UIDropDown: Текст всегда прижат к верху (не решается)
 - .NET Framework 3.5: Отсутствие Enum.TryParse и ToArray() - исправлено
 
-## Файлы этапа A
-- ✅ `src/Config/AppState.cs` - централизованное состояние приложения с событиями
+## Файлы проекта
+- ✅ `src/Config/AppState.cs` - централизованное состояние приложения с событиями и новыми enum'ами
+- ✅ `src/Data/Collector/BuildingSample.cs` - структура данных с полями для capacity и education
 - ✅ `src/Rendering/Overlay/OverlayRenderer.cs` - базовый класс для рендеринга оверлеев
 - ✅ `src/OverlayManager.cs` - менеджер для связи UI и OverlayRenderer
-- ✅ `src/UI/Panel/MainPanel.cs` - обновленная панель с исправленными контролами и легендой
+- ✅ `src/UI/Panel/MainPanel.cs` - обновленная панель с новыми контролами и динамической легендой
 - ✅ `src/LoadingExtension.cs` - интеграция OverlayManager в жизненный цикл мода

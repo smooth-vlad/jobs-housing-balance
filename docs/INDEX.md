@@ -3,6 +3,7 @@
 ## Основные документы
 - **[README.md](README.md)** - Обзор проекта и текущий статус
 - **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Детальное состояние разработки
+- **[ETAP_B_2_0_PLAN.md](ETAP_B_2_0_PLAN.md)** - План реализации Этап B 2.0
 - **[TASKS.md](TASKS.md)** - План выполнения и задачи
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Архитектура и структура проекта
 - **[TECHNICAL_DETAILS.md](TECHNICAL_DETAILS.md)** - Технические детали реализации
@@ -12,8 +13,10 @@
 
 ## Разработка
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Правила разработки и окружение
+- **[TESTING.md](TESTING.md)** - Руководство по тестированию
 - **[COMMON_MISTAKES.md](COMMON_MISTAKES.md)** - Частые ошибки и их решения
 - **[RESEARCH_NOTES.md](RESEARCH_NOTES.md)** - Заметки по исследованию API
+- **[DOCS_RULES.md](DOCS_RULES.md)** - Правила обновления документации
 
 ## UI компоненты
 - **[UI_COMPONENTS.md](UI_COMPONENTS.md)** - Обзор UI компонентов
@@ -36,25 +39,25 @@
 
 ### По назначению
 - **Обзорные**: README, CURRENT_STATUS, ARCHITECTURE
-- **Планирование**: TASKS, TECHNICAL_DETAILS
-- **Разработка**: DEVELOPMENT, COMMON_MISTAKES, RESEARCH_NOTES
+- **Планирование**: ETAP_B_2_0_PLAN, TECHNICAL_DETAILS
+- **Разработка**: DEVELOPMENT, TESTING, COMMON_MISTAKES, RESEARCH_NOTES, DOCS_RULES
 - **Справочные**: UI_COMPONENTS, api/, ui/
 
 ### По актуальности
-- **Актуальные**: README, CURRENT_STATUS, TASKS, TECHNICAL_DETAILS
+- **Актуальные**: README, CURRENT_STATUS, ETAP_B_2_0_PLAN, TECHNICAL_DETAILS, TESTING
 - **Справочные**: UI_COMPONENTS, api/, ui/, COMMON_MISTAKES
-- **Архивные**: RESEARCH_NOTES (исторические заметки)
+- **Архивные**: TASKS, RESEARCH_NOTES (исторические заметки)
 
 ## Как использовать документацию
 
 1. **Новый разработчик**: README → QUICK_START → ARCHITECTURE → CURRENT_STATUS
-2. **Текущая задача**: TASKS → TECHNICAL_DETAILS → соответствующие UI гайды
+2. **Текущая задача**: ETAP_B_2_0_PLAN → TECHNICAL_DETAILS → соответствующие UI гайды
 3. **Решение проблем**: COMMON_MISTAKES → RESEARCH_NOTES → api/
 4. **Понимание кода**: TECHNICAL_DETAILS → ARCHITECTURE → UI_COMPONENTS
 
 ## Обновление документации
 
-- **При завершении задач**: Обновлять CURRENT_STATUS и TASKS
+- **При завершении задач**: Обновлять CURRENT_STATUS и ETAP_B_2_0_PLAN
 - **При изменении архитектуры**: Обновлять ARCHITECTURE и TECHNICAL_DETAILS
 - **При обнаружении проблем**: Добавлять в COMMON_MISTAKES
 - **При исследовании API**: Добавлять в RESEARCH_NOTES

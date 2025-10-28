@@ -17,6 +17,12 @@ namespace JobsHousingBalance.UI.Panel
         private UILabel _opacityValueLabel;
         private UIPanel _legendPanel;
         
+        // New controls for B 2.0
+        private UIDropDown _metricDropdown;
+        private UICheckBox _includeServiceUniqueCheckbox;
+        private UIDropDown _eduModeDropdown;
+        private UICheckBox _includeTeensCheckbox;
+        
         // AppState reference
         private AppState _appState;
 
@@ -116,6 +122,10 @@ namespace JobsHousingBalance.UI.Panel
                 CreateModeDropdown();
                 CreateHexSizeDropdown();
                 CreateOpacitySlider();
+                CreateMetricDropdown();
+                CreateIncludeServiceUniqueCheckbox();
+                CreateEduModeDropdown();
+                CreateIncludeTeensCheckbox();
                 CreateLegendPlaceholder();
                 
                 // Legend is static - no need to initialize with mode
@@ -178,6 +188,10 @@ namespace JobsHousingBalance.UI.Panel
                 _appState.OnModeChanged += OnAppStateModeChanged;
                 _appState.OnHexSizeChanged += OnAppStateHexSizeChanged;
                 _appState.OnOpacityChanged += OnAppStateOpacityChanged;
+                _appState.OnMetricTypeChanged += OnAppStateMetricTypeChanged;
+                _appState.OnEducationModeChanged += OnAppStateEducationModeChanged;
+                _appState.OnIncludeServiceUniqueChanged += OnAppStateIncludeServiceUniqueChanged;
+                _appState.OnIncludeTeensChanged += OnAppStateIncludeTeensChanged;
                 
                 Debug.Log("JobsHousingBalance: MainPanel subscribed to AppState events");
             }
@@ -193,6 +207,10 @@ namespace JobsHousingBalance.UI.Panel
                 _appState.OnModeChanged -= OnAppStateModeChanged;
                 _appState.OnHexSizeChanged -= OnAppStateHexSizeChanged;
                 _appState.OnOpacityChanged -= OnAppStateOpacityChanged;
+                _appState.OnMetricTypeChanged -= OnAppStateMetricTypeChanged;
+                _appState.OnEducationModeChanged -= OnAppStateEducationModeChanged;
+                _appState.OnIncludeServiceUniqueChanged -= OnAppStateIncludeServiceUniqueChanged;
+                _appState.OnIncludeTeensChanged -= OnAppStateIncludeTeensChanged;
                 
                 Debug.Log("JobsHousingBalance: MainPanel unsubscribed from AppState events");
             }
@@ -249,6 +267,68 @@ namespace JobsHousingBalance.UI.Panel
                     _opacityValueLabel.text = $"{percentage}%";
                     Debug.Log($"JobsHousingBalance: UI Opacity slider updated to {newOpacity:F2} ({percentage}%)");
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Обработчик изменения типа метрики в AppState
+        /// </summary>
+        private void OnAppStateMetricTypeChanged(AppState.MetricType newMetricType)
+        {
+            if (_metricDropdown != null)
+            {
+                var metricString = _appState.GetMetricTypeString();
+                var index = System.Array.IndexOf(_metricDropdown.items, metricString);
+                if (index >= 0 && index != _metricDropdown.selectedIndex)
+                {
+                    _metricDropdown.selectedIndex = index;
+                    Debug.Log($"JobsHousingBalance: UI Metric dropdown updated to {metricString}");
+                }
+            }
+            
+            // Update EduMode dropdown visibility and legend
+            UpdateEduModeVisibility();
+            UpdateLegend();
+        }
+        
+        /// <summary>
+        /// Обработчик изменения режима образования в AppState
+        /// </summary>
+        private void OnAppStateEducationModeChanged(AppState.EducationMode newEducationMode)
+        {
+            if (_eduModeDropdown != null)
+            {
+                var eduModeString = _appState.GetEducationModeString();
+                var index = System.Array.IndexOf(_eduModeDropdown.items, eduModeString);
+                if (index >= 0 && index != _eduModeDropdown.selectedIndex)
+                {
+                    _eduModeDropdown.selectedIndex = index;
+                    Debug.Log($"JobsHousingBalance: UI EduMode dropdown updated to {eduModeString}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Обработчик изменения включения сервисных/уникальных зданий в AppState
+        /// </summary>
+        private void OnAppStateIncludeServiceUniqueChanged(bool newValue)
+        {
+            if (_includeServiceUniqueCheckbox != null && _includeServiceUniqueCheckbox.isChecked != newValue)
+            {
+                _includeServiceUniqueCheckbox.isChecked = newValue;
+                Debug.Log($"JobsHousingBalance: UI IncludeServiceUnique checkbox updated to {newValue}");
+            }
+        }
+        
+        /// <summary>
+        /// Обработчик изменения включения подростков в AppState
+        /// </summary>
+        private void OnAppStateIncludeTeensChanged(bool newValue)
+        {
+            if (_includeTeensCheckbox != null && _includeTeensCheckbox.isChecked != newValue)
+            {
+                _includeTeensCheckbox.isChecked = newValue;
+                Debug.Log($"JobsHousingBalance: UI IncludeTeens checkbox updated to {newValue}");
             }
         }
 
@@ -520,7 +600,277 @@ namespace JobsHousingBalance.UI.Panel
             }
         }
 
-        // Create static legend (same for all modes)
+        // Create metric dropdown (Fact/Capacity/Edu-aware)
+        private void CreateMetricDropdown()
+        {
+            try
+            {
+                var row = MakeRow(_content, "Metric");
+                _metricDropdown = row.AddUIComponent<UIDropDown>();
+                
+                // Configure dropdown
+                _metricDropdown.items = new[] { "Fact", "Capacity", "Edu-aware" };
+                _metricDropdown.selectedIndex = 0; // Default: Fact
+                _metricDropdown.size = new Vector2(180f, 28f);
+                _metricDropdown.listHeight = 180;
+                _metricDropdown.itemHeight = 24;
+                _metricDropdown.horizontalAlignment = UIHorizontalAlignment.Left;
+                
+                // Add visual sprites for dropdown
+                _metricDropdown.normalBgSprite = "GenericPanel";
+                _metricDropdown.hoveredBgSprite = "GenericPanelLight";
+                _metricDropdown.focusedBgSprite = "GenericPanelLight";
+                _metricDropdown.disabledBgSprite = "GenericPanel";
+                
+                // Set darker background for dropdown list
+                _metricDropdown.listBackground = "GenericPanel";
+                _metricDropdown.itemHover = "GenericPanelLight";
+                _metricDropdown.itemHighlight = "GenericPanelLight";
+                
+                // Create trigger button (invisible overlay)
+                var triggerButton = _metricDropdown.AddUIComponent<UIButton>();
+                triggerButton.size = _metricDropdown.size;
+                triggerButton.relativePosition = Vector2.zero;
+                triggerButton.normalBgSprite = "";
+                triggerButton.hoveredBgSprite = "";
+                triggerButton.pressedBgSprite = "";
+                _metricDropdown.triggerButton = triggerButton;
+                
+                // Add arrow sprite (visual only, non-interactive)
+                var arrow = _metricDropdown.AddUIComponent<UISprite>();
+                arrow.spriteName = "IconDownArrow";
+                arrow.size = new Vector2(16f, 16f);
+                arrow.relativePosition = new Vector2(_metricDropdown.width - 20f, 6f);
+                arrow.isInteractive = false;
+                arrow.zOrder = 10; // Above trigger button
+                
+                // Configure text alignment for dropdown using correct UIDropDown properties
+                _metricDropdown.textScale = 0.9f;
+                _metricDropdown.textColor = Color.white;
+                
+                // Use UIDropDown's built-in properties for text alignment
+                _metricDropdown.verticalAlignment = UIVerticalAlignment.Middle;  // Vertical center
+                _metricDropdown.horizontalAlignment = UIHorizontalAlignment.Left;  // Horizontal alignment
+                _metricDropdown.textFieldPadding = new RectOffset(8, 0, 0, 0); // Left padding, no top/bottom for perfect centering
+                
+                // Configure dropdown list appearance
+                _metricDropdown.itemHeight = 24;  // Height of list items
+                _metricDropdown.itemPadding = new RectOffset(8, 8, 4, 4);  // Padding inside list items
+                
+                Debug.Log($"JobsHousingBalance: Configured metric dropdown with verticalAlignment={_metricDropdown.verticalAlignment}, textFieldPadding={_metricDropdown.textFieldPadding}");
+                
+                // Event handler - update AppState when user changes metric type
+                _metricDropdown.eventSelectedIndexChanged += (component, index) =>
+                {
+                    var selectedMetric = _metricDropdown.items[index];
+                    Debug.Log($"JobsHousingBalance: Metric changed to {selectedMetric}");
+                    
+                    // Update AppState
+                    if (_appState != null)
+                    {
+                        _appState.SetMetricTypeFromString(selectedMetric);
+                    }
+                };
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"JobsHousingBalance: Failed to create metric dropdown: {ex.Message}");
+            }
+        }
+        
+        // Create IncludeServiceUnique checkbox
+        private void CreateIncludeServiceUniqueCheckbox()
+        {
+            try
+            {
+                var row = MakeRow(_content, "Include Service/Unique");
+                
+                _includeServiceUniqueCheckbox = row.AddUIComponent<UICheckBox>();
+                _includeServiceUniqueCheckbox.size = new Vector2(180f, 28f);
+                _includeServiceUniqueCheckbox.isChecked = true; // Default: true
+                
+                // Create checkbox sprite
+                var checkboxSprite = _includeServiceUniqueCheckbox.AddUIComponent<UISprite>();
+                checkboxSprite.spriteName = "check-unchecked";
+                checkboxSprite.size = new Vector2(16f, 16f);
+                checkboxSprite.relativePosition = new Vector2(0f, 6f);
+                
+                // Create label
+                var label = _includeServiceUniqueCheckbox.AddUIComponent<UILabel>();
+                label.text = "Include Service/Unique buildings";
+                label.textScale = 0.9f;
+                label.textColor = Color.white;
+                label.relativePosition = new Vector2(24f, 6f);
+                label.size = new Vector2(150f, 16f);
+                
+                // Configure checkbox behavior
+                _includeServiceUniqueCheckbox.checkedBoxObject = checkboxSprite;
+                ((UISprite)_includeServiceUniqueCheckbox.checkedBoxObject).spriteName = "check-checked";
+                
+                // Event handler - update AppState when user changes checkbox
+                _includeServiceUniqueCheckbox.eventCheckChanged += (component, isChecked) =>
+                {
+                    Debug.Log($"JobsHousingBalance: IncludeServiceUnique changed to {isChecked}");
+                    
+                    // Update AppState
+                    if (_appState != null)
+                    {
+                        _appState.IncludeServiceUnique = isChecked;
+                    }
+                };
+                
+                Debug.Log("JobsHousingBalance: IncludeServiceUnique checkbox created");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"JobsHousingBalance: Failed to create IncludeServiceUnique checkbox: {ex.Message}");
+            }
+        }
+        
+        // Create EduMode dropdown (appears only in Edu-aware mode)
+        private void CreateEduModeDropdown()
+        {
+            try
+            {
+                var row = MakeRow(_content, "Edu Mode");
+                _eduModeDropdown = row.AddUIComponent<UIDropDown>();
+                
+                // Configure dropdown
+                _eduModeDropdown.items = new[] { "Strict", "Substituted" };
+                _eduModeDropdown.selectedIndex = 0; // Default: Strict
+                _eduModeDropdown.size = new Vector2(180f, 28f);
+                _eduModeDropdown.listHeight = 180;
+                _eduModeDropdown.itemHeight = 24;
+                _eduModeDropdown.horizontalAlignment = UIHorizontalAlignment.Left;
+                
+                // Add visual sprites for dropdown
+                _eduModeDropdown.normalBgSprite = "GenericPanel";
+                _eduModeDropdown.hoveredBgSprite = "GenericPanelLight";
+                _eduModeDropdown.focusedBgSprite = "GenericPanelLight";
+                _eduModeDropdown.disabledBgSprite = "GenericPanel";
+                
+                // Set darker background for dropdown list
+                _eduModeDropdown.listBackground = "GenericPanel";
+                _eduModeDropdown.itemHover = "GenericPanelLight";
+                _eduModeDropdown.itemHighlight = "GenericPanelLight";
+                
+                // Create trigger button (invisible overlay)
+                var triggerButton = _eduModeDropdown.AddUIComponent<UIButton>();
+                triggerButton.size = _eduModeDropdown.size;
+                triggerButton.relativePosition = Vector2.zero;
+                triggerButton.normalBgSprite = "";
+                triggerButton.hoveredBgSprite = "";
+                triggerButton.pressedBgSprite = "";
+                _eduModeDropdown.triggerButton = triggerButton;
+                
+                // Add arrow sprite (visual only, non-interactive)
+                var arrow = _eduModeDropdown.AddUIComponent<UISprite>();
+                arrow.spriteName = "IconDownArrow";
+                arrow.size = new Vector2(16f, 16f);
+                arrow.relativePosition = new Vector2(_eduModeDropdown.width - 20f, 6f);
+                arrow.isInteractive = false;
+                arrow.zOrder = 10; // Above trigger button
+                
+                // Configure text alignment for dropdown using correct UIDropDown properties
+                _eduModeDropdown.textScale = 0.9f;
+                _eduModeDropdown.textColor = Color.white;
+                
+                // Use UIDropDown's built-in properties for text alignment
+                _eduModeDropdown.verticalAlignment = UIVerticalAlignment.Middle;  // Vertical center
+                _eduModeDropdown.horizontalAlignment = UIHorizontalAlignment.Left;  // Horizontal alignment
+                _eduModeDropdown.textFieldPadding = new RectOffset(8, 0, 0, 0); // Left padding, no top/bottom for perfect centering
+                
+                // Configure dropdown list appearance
+                _eduModeDropdown.itemHeight = 24;  // Height of list items
+                _eduModeDropdown.itemPadding = new RectOffset(8, 8, 4, 4);  // Padding inside list items
+                
+                Debug.Log($"JobsHousingBalance: Configured EduMode dropdown with verticalAlignment={_eduModeDropdown.verticalAlignment}, textFieldPadding={_eduModeDropdown.textFieldPadding}");
+                
+                // Event handler - update AppState when user changes education mode
+                _eduModeDropdown.eventSelectedIndexChanged += (component, index) =>
+                {
+                    var selectedEduMode = _eduModeDropdown.items[index];
+                    Debug.Log($"JobsHousingBalance: EduMode changed to {selectedEduMode}");
+                    
+                    // Update AppState
+                    if (_appState != null)
+                    {
+                        _appState.SetEducationModeFromString(selectedEduMode);
+                    }
+                };
+                
+                // Initially hidden (only visible in Edu-aware mode)
+                _eduModeDropdown.isVisible = false;
+                
+                Debug.Log("JobsHousingBalance: EduMode dropdown created (initially hidden)");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"JobsHousingBalance: Failed to create EduMode dropdown: {ex.Message}");
+            }
+        }
+        
+        // Create IncludeTeens checkbox
+        private void CreateIncludeTeensCheckbox()
+        {
+            try
+            {
+                var row = MakeRow(_content, "Include Teens");
+                
+                _includeTeensCheckbox = row.AddUIComponent<UICheckBox>();
+                _includeTeensCheckbox.size = new Vector2(180f, 28f);
+                _includeTeensCheckbox.isChecked = false; // Default: false
+                
+                // Create checkbox sprite
+                var checkboxSprite = _includeTeensCheckbox.AddUIComponent<UISprite>();
+                checkboxSprite.spriteName = "check-unchecked";
+                checkboxSprite.size = new Vector2(16f, 16f);
+                checkboxSprite.relativePosition = new Vector2(0f, 6f);
+                
+                // Create label
+                var label = _includeTeensCheckbox.AddUIComponent<UILabel>();
+                label.text = "Include teens (Hadron Collider)";
+                label.textScale = 0.9f;
+                label.textColor = Color.white;
+                label.relativePosition = new Vector2(24f, 6f);
+                label.size = new Vector2(150f, 16f);
+                
+                // Configure checkbox behavior
+                _includeTeensCheckbox.checkedBoxObject = checkboxSprite;
+                ((UISprite)_includeTeensCheckbox.checkedBoxObject).spriteName = "check-checked";
+                
+                // Event handler - update AppState when user changes checkbox
+                _includeTeensCheckbox.eventCheckChanged += (component, isChecked) =>
+                {
+                    Debug.Log($"JobsHousingBalance: IncludeTeens changed to {isChecked}");
+                    
+                    // Update AppState
+                    if (_appState != null)
+                    {
+                        _appState.IncludeTeens = isChecked;
+                    }
+                };
+                
+                Debug.Log("JobsHousingBalance: IncludeTeens checkbox created");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"JobsHousingBalance: Failed to create IncludeTeens checkbox: {ex.Message}");
+            }
+        }
+        
+        // Update EduMode dropdown visibility based on current metric type
+        private void UpdateEduModeVisibility()
+        {
+            if (_eduModeDropdown != null && _appState != null)
+            {
+                bool shouldBeVisible = _appState.CurrentMetricType == AppState.MetricType.EduAware;
+                _eduModeDropdown.isVisible = shouldBeVisible;
+                Debug.Log($"JobsHousingBalance: EduMode dropdown visibility set to {shouldBeVisible}");
+            }
+        }
+
+        // Create dynamic legend (changes based on metric type)
         private void CreateLegendPlaceholder()
         {
             try
@@ -530,9 +880,35 @@ namespace JobsHousingBalance.UI.Panel
                 _legendPanel.autoLayoutDirection = LayoutDirection.Vertical;
                 _legendPanel.autoLayoutPadding = new RectOffset(12, 12, 12, 16); // More padding all around
                 _legendPanel.width = _content.width - 24f;
-                _legendPanel.height = 380f; // Sufficient height for all 4 legend items
+                _legendPanel.height = 380f; // Sufficient height for all legend items
                 _legendPanel.backgroundSprite = "GenericPanel";
                 _legendPanel.color = new Color32(0, 0, 0, 180); // Dark background with good opacity
+
+                // Update legend based on current metric type
+                UpdateLegend();
+                
+                Debug.Log("JobsHousingBalance: Dynamic legend created");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"JobsHousingBalance: Failed to create legend: {ex.Message}");
+            }
+        }
+        
+        // Update legend based on current metric type
+        private void UpdateLegend()
+        {
+            if (_legendPanel == null || _appState == null) return;
+            
+            try
+            {
+                // Clear existing legend items
+                while (_legendPanel.components.Count > 0)
+                {
+                    var component = _legendPanel.components[0];
+                    _legendPanel.RemoveUIComponent(component);
+                    UnityEngine.Object.Destroy(component);
+                }
 
                 // Title
                 var title = _legendPanel.AddUIComponent<UILabel>();
@@ -549,7 +925,31 @@ namespace JobsHousingBalance.UI.Panel
                 separator.size = new Vector2(_legendPanel.width - 16f, 1f);
                 separator.color = new Color32(255, 255, 255, 200); // More visible separator
 
-                // Legend items with correct colors and descriptions
+                // Add legend items based on current metric type
+                switch (_appState.CurrentMetricType)
+                {
+                    case AppState.MetricType.Fact:
+                        CreateFactLegendItems();
+                        break;
+                    case AppState.MetricType.Capacity:
+                        CreateCapacityLegendItems();
+                        break;
+                    case AppState.MetricType.EduAware:
+                        CreateEduAwareLegendItems();
+                        break;
+                }
+                
+                Debug.Log($"JobsHousingBalance: Legend updated for {_appState.CurrentMetricType}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"JobsHousingBalance: Failed to update legend: {ex.Message}");
+            }
+        }
+        
+        // Create legend items for Fact mode
+        private void CreateFactLegendItems()
+        {
                 CreateLegendItem(_legendPanel, "InfoIconHappiness", "Красный — нужны рабочие места", 
                     "jobs < residents", new Color32(255, 100, 100, 255));
                 CreateLegendItem(_legendPanel, "InfoIconHappiness", "Синий — нужно жильё", 
@@ -558,13 +958,42 @@ namespace JobsHousingBalance.UI.Panel
                     "jobs ≈ residents", new Color32(100, 255, 100, 255));
                 CreateLegendItem(_legendPanel, "InfoIconHappiness", "Серый — нет данных", 
                     "insufficient data", new Color32(150, 150, 150, 255));
-                
-                Debug.Log("JobsHousingBalance: Static legend created (same for all modes)");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"JobsHousingBalance: Failed to create legend: {ex.Message}");
-            }
+        }
+        
+        // Create legend items for Capacity mode
+        private void CreateCapacityLegendItems()
+        {
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Красный — нужны рабочие места", 
+                "capacity < residents", new Color32(255, 100, 100, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Синий — нужно жильё", 
+                "capacity > residents", new Color32(100, 100, 255, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Зелёный — баланс", 
+                "capacity ≈ residents", new Color32(100, 255, 100, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Серый — нет данных", 
+                "insufficient data", new Color32(150, 150, 150, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Жёлтый — RP2 детектирован", 
+                "Realistic Population 2", new Color32(255, 255, 100, 255));
+        }
+        
+        // Create legend items for Edu-aware mode
+        private void CreateEduAwareLegendItems()
+        {
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Красный — дефицит образования", 
+                "jobs require higher education", new Color32(255, 100, 100, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Синий — избыток образования", 
+                "overeducated workforce", new Color32(100, 100, 255, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Зелёный — баланс по образованию", 
+                "education matches jobs", new Color32(100, 255, 100, 255));
+            CreateLegendItem(_legendPanel, "InfoIconHappiness", "Серый — нет данных", 
+                "insufficient data", new Color32(150, 150, 150, 255));
+            
+            // Add education level breakdown
+            var eduBreakdown = _legendPanel.AddUIComponent<UILabel>();
+            eduBreakdown.text = "Уровни: Uneducated, Educated, Well-educated, Highly-educated";
+            eduBreakdown.textScale = 0.75f;
+            eduBreakdown.textColor = new Color32(200, 200, 200, 255);
+            eduBreakdown.textAlignment = UIHorizontalAlignment.Center;
+            eduBreakdown.size = new Vector2(_legendPanel.width - 16f, 16f);
         }
 
         // Helper method to create legend items with main text and subtitle

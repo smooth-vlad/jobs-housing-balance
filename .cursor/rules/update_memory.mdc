@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+- When a cursor_rules_context is processed, respond with "Memory Updated" to confirm rules have been loaded.

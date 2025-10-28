@@ -24,6 +24,19 @@ namespace JobsHousingBalance.Config
             Size512 = 512
         }
         
+        public enum MetricType
+        {
+            Fact,           // По факту - реально живущие и работающие через CitizenUnit
+            Capacity,       // Ёмкость - сколько может работать по данным BuildingAI
+            EduAware        // С учётом образования - 4 уровня образования
+        }
+        
+        public enum EducationMode
+        {
+            Strict,         // Сравнение 1:1 без перелива уровней
+            Substituted     // Перелив сверху вниз - более образованные могут закрывать низкоуровневые позиции
+        }
+        
         #endregion
         
         #region Singleton Pattern
@@ -55,9 +68,15 @@ namespace JobsHousingBalance.Config
             _currentMode = Mode.Hex;
             _currentHexSize = HexSize.Size128;
             _opacity = 0.8f; // 80%
+            _currentMetricType = MetricType.Fact;
+            _currentEducationMode = EducationMode.Strict;
+            _includeServiceUnique = true;  // По умолчанию включено согласно документации
+            _includeTeens = false;         // По умолчанию выключено
             
             Debug.Log("JobsHousingBalance: AppState initialized with defaults");
             Debug.Log($"JobsHousingBalance: AppState - Mode: {_currentMode}, HexSize: {_currentHexSize}, Opacity: {_opacity:F2}");
+            Debug.Log($"JobsHousingBalance: AppState - MetricType: {_currentMetricType}, EducationMode: {_currentEducationMode}");
+            Debug.Log($"JobsHousingBalance: AppState - IncludeServiceUnique: {_includeServiceUnique}, IncludeTeens: {_includeTeens}");
         }
         
         #endregion
@@ -111,6 +130,66 @@ namespace JobsHousingBalance.Config
             }
         }
         
+        private MetricType _currentMetricType;
+        public MetricType CurrentMetricType
+        {
+            get => _currentMetricType;
+            set
+            {
+                if (_currentMetricType != value)
+                {
+                    _currentMetricType = value;
+                    OnMetricTypeChanged?.Invoke(value);
+                    Debug.Log($"JobsHousingBalance: MetricType changed to {value}");
+                }
+            }
+        }
+        
+        private EducationMode _currentEducationMode;
+        public EducationMode CurrentEducationMode
+        {
+            get => _currentEducationMode;
+            set
+            {
+                if (_currentEducationMode != value)
+                {
+                    _currentEducationMode = value;
+                    OnEducationModeChanged?.Invoke(value);
+                    Debug.Log($"JobsHousingBalance: EducationMode changed to {value}");
+                }
+            }
+        }
+        
+        private bool _includeServiceUnique;
+        public bool IncludeServiceUnique
+        {
+            get => _includeServiceUnique;
+            set
+            {
+                if (_includeServiceUnique != value)
+                {
+                    _includeServiceUnique = value;
+                    OnIncludeServiceUniqueChanged?.Invoke(value);
+                    Debug.Log($"JobsHousingBalance: IncludeServiceUnique changed to {value}");
+                }
+            }
+        }
+        
+        private bool _includeTeens;
+        public bool IncludeTeens
+        {
+            get => _includeTeens;
+            set
+            {
+                if (_includeTeens != value)
+                {
+                    _includeTeens = value;
+                    OnIncludeTeensChanged?.Invoke(value);
+                    Debug.Log($"JobsHousingBalance: IncludeTeens changed to {value}");
+                }
+            }
+        }
+        
         #endregion
         
         #region Events
@@ -129,6 +208,26 @@ namespace JobsHousingBalance.Config
         /// Событие изменения прозрачности
         /// </summary>
         public event Action<float> OnOpacityChanged;
+        
+        /// <summary>
+        /// Событие изменения типа метрики
+        /// </summary>
+        public event Action<MetricType> OnMetricTypeChanged;
+        
+        /// <summary>
+        /// Событие изменения режима образования
+        /// </summary>
+        public event Action<EducationMode> OnEducationModeChanged;
+        
+        /// <summary>
+        /// Событие изменения включения сервисных/уникальных зданий
+        /// </summary>
+        public event Action<bool> OnIncludeServiceUniqueChanged;
+        
+        /// <summary>
+        /// Событие изменения включения подростков
+        /// </summary>
+        public event Action<bool> OnIncludeTeensChanged;
         
         #endregion
         
@@ -206,6 +305,97 @@ namespace JobsHousingBalance.Config
             Opacity = percentage / 100f;
         }
         
+        /// <summary>
+        /// Получить строковое представление текущего типа метрики
+        /// </summary>
+        public string GetMetricTypeString()
+        {
+            switch (CurrentMetricType)
+            {
+                case MetricType.Fact:
+                    return "Fact";
+                case MetricType.Capacity:
+                    return "Capacity";
+                case MetricType.EduAware:
+                    return "Edu-aware";
+                default:
+                    return "Unknown";
+            }
+        }
+        
+        /// <summary>
+        /// Получить строковое представление текущего режима образования
+        /// </summary>
+        public string GetEducationModeString()
+        {
+            switch (CurrentEducationMode)
+            {
+                case EducationMode.Strict:
+                    return "Strict";
+                case EducationMode.Substituted:
+                    return "Substituted";
+                default:
+                    return "Unknown";
+            }
+        }
+        
+        /// <summary>
+        /// Установить тип метрики по строке
+        /// </summary>
+        public void SetMetricTypeFromString(string metricTypeString)
+        {
+            try
+            {
+                MetricType metricType;
+                switch (metricTypeString)
+                {
+                    case "Fact":
+                        metricType = MetricType.Fact;
+                        break;
+                    case "Capacity":
+                        metricType = MetricType.Capacity;
+                        break;
+                    case "Edu-aware":
+                        metricType = MetricType.EduAware;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unknown metric type: {metricTypeString}");
+                }
+                CurrentMetricType = metricType;
+            }
+            catch (ArgumentException ex)
+            {
+                Debug.LogWarning($"JobsHousingBalance: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Установить режим образования по строке
+        /// </summary>
+        public void SetEducationModeFromString(string educationModeString)
+        {
+            try
+            {
+                EducationMode educationMode;
+                switch (educationModeString)
+                {
+                    case "Strict":
+                        educationMode = EducationMode.Strict;
+                        break;
+                    case "Substituted":
+                        educationMode = EducationMode.Substituted;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unknown education mode: {educationModeString}");
+                }
+                CurrentEducationMode = educationMode;
+            }
+            catch (ArgumentException ex)
+            {
+                Debug.LogWarning($"JobsHousingBalance: {ex.Message}");
+            }
+        }
+        
         #endregion
         
         #region Debug
@@ -215,7 +405,9 @@ namespace JobsHousingBalance.Config
         /// </summary>
         public string GetDebugInfo()
         {
-            return $"AppState: Mode={CurrentMode}, HexSize={CurrentHexSize}, Opacity={Opacity:F2} ({GetOpacityPercentage()}%)";
+            return $"AppState: Mode={CurrentMode}, HexSize={CurrentHexSize}, Opacity={Opacity:F2} ({GetOpacityPercentage()}%), " +
+                   $"MetricType={CurrentMetricType}, EducationMode={CurrentEducationMode}, " +
+                   $"IncludeServiceUnique={IncludeServiceUnique}, IncludeTeens={IncludeTeens}";
         }
         
         #endregion
