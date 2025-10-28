@@ -67,7 +67,11 @@ namespace JobsHousingBalance.UI.Panel
                 _close.pressedBgSprite = "ButtonMenuPressed";
                 _close.size = new Vector2(28f, 24f);
                 _close.relativePosition = new Vector2(width - _close.width - 8f, 6f);
-                _close.eventClick += (_, __) => Hide();            // Standard: just hide panel
+                _close.name = "CloseButton";
+                _close.isInteractive = true;
+                _close.isEnabled = true;
+                _close.zOrder = 1000;                              // Ensure it's above other elements
+                _close.eventClick += OnCloseButtonClicked;         // Use proper event handler
 
                 // Center panel (can be replaced with custom positioning)
                 CenterToParent();
@@ -76,8 +80,8 @@ namespace JobsHousingBalance.UI.Panel
                 var drag = AddUIComponent<UIDragHandle>();
                 drag.target = this;
                 drag.relativePosition = Vector2.zero;
-                drag.size = new Vector2(width, 32f);               // Area to drag by
-                drag.BringToFront();
+                drag.size = new Vector2(width - _close.width - 16f, 32f);  // Exclude close button area
+                drag.zOrder = 100;                               // Below close button
 
                 // Initially hidden
                 isVisible = false;
@@ -118,6 +122,13 @@ namespace JobsHousingBalance.UI.Panel
                 Hide();
             else
                 Show();
+        }
+
+        private void OnCloseButtonClicked(UIComponent component, UIMouseEventParameter eventParam)
+        {
+            Debug.Log("JobsHousingBalance: Close button clicked");
+            Hide();
+            eventParam.Use();
         }
 
         public override void OnDestroy()

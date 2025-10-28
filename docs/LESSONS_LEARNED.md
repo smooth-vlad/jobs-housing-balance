@@ -54,3 +54,34 @@ public override void OnDestroy()
 - Anti-spam cooldown: 150ms
 - `suppressNextClick` после драга
 - `ClampToScreen()` для ограничения перемещения
+
+### Исправление кнопки закрытия (Task 9.6)
+**Проблема**: Кнопка закрытия не реагировала на клики.
+
+**Причины**:
+- Лямбда-выражение вместо полноценного обработчика
+- Drag handle перекрывал область кнопки
+- Неправильная настройка z-order
+
+**Решение**:
+```csharp
+// Правильная настройка кнопки
+_close.name = "CloseButton";
+_close.isInteractive = true;
+_close.isEnabled = true;
+_close.zOrder = 1000;  // Высокий приоритет
+
+// Отдельный метод обработчика
+_close.eventClick += OnCloseButtonClicked;
+
+private void OnCloseButtonClicked(UIComponent component, UIMouseEventParameter eventParam)
+{
+    Debug.Log("JobsHousingBalance: Close button clicked");
+    Hide();
+    eventParam.Use();
+}
+
+// Drag handle не должен перекрывать кнопку
+drag.size = new Vector2(width - _close.width - 16f, 32f);
+drag.zOrder = 100;  // Ниже кнопки закрытия
+```
