@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "TASKS.md",
+                "file": "research/Этап B.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "TASKS"
+              "title": "Этап B"
             }
           }
         ]
@@ -171,6 +171,9 @@
   },
   "active": "1b14fb39f62e620c",
   "lastOpenFiles": [
+    "TASKS.md",
+    "research/Этап B.md",
+    "research",
     "INDEX.md",
     "TECHNICAL_DETAILS.md",
     "CURRENT_STATUS.md",
@@ -179,7 +182,6 @@
     "QUICK_START.md",
     "RESEARCH_NOTES.md",
     "README.md",
-    "TASKS.md",
     "UI_COMPONENTS.md",
     "api/research-methodology.md",
     "api/modding-api.md",
@@ -203,9 +205,7 @@
     "ui/ui-events.mdc",
     "ui/ui-drag-drop.mdc",
     "ui/ui-panel.mdc",
-    "ui/ui-slider.mdc",
     "Thinking process/Клик на кнопку.md",
-    "Thinking process/Не выравнивается текст в drop-down.md",
-    "Thinking process/Отображение панели.md"
+    "Thinking process/Не выравнивается текст в drop-down.md"
   ]
 }

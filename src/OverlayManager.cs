@@ -1,6 +1,7 @@
 using UnityEngine;
 using JobsHousingBalance.Config;
 using JobsHousingBalance.Rendering.Overlay;
+using JobsHousingBalance.Data.Collector;
 
 namespace JobsHousingBalance
 {
@@ -43,6 +44,7 @@ namespace JobsHousingBalance
         
         private OverlayRenderer _overlayRenderer;
         private AppState _appState;
+        private DataUpdateTriggers _dataUpdateTriggers;
         
         #endregion
         
@@ -61,6 +63,24 @@ namespace JobsHousingBalance
                     Debug.Log("JobsHousingBalance: OverlayRenderer created");
                 }
                 return _overlayRenderer;
+            }
+        }
+        
+        /// <summary>
+        /// Получить систему триггеров обновления данных
+        /// </summary>
+        public DataUpdateTriggers DataUpdateTriggers
+        {
+            get
+            {
+                if (_dataUpdateTriggers == null)
+                {
+                    // Создаем GameObject для DataUpdateTriggers
+                    var go = new GameObject("JobsHousingBalance_DataUpdateTriggers");
+                    _dataUpdateTriggers = go.AddComponent<DataUpdateTriggers>();
+                    Debug.Log("JobsHousingBalance: DataUpdateTriggers created");
+                }
+                return _dataUpdateTriggers;
             }
         }
         
@@ -90,6 +110,9 @@ namespace JobsHousingBalance
                 
                 // Initialize overlay with current AppState values
                 OverlayRenderer.UpdateFromAppState(_appState);
+                
+                // Initialize data collection system
+                DataUpdateTriggers.Initialize();
                 
                 Debug.Log("JobsHousingBalance: OverlayManager initialized and subscribed to AppState events");
             }
@@ -124,6 +147,40 @@ namespace JobsHousingBalance
         }
         
         /// <summary>
+        /// Получить актуальные данные о зданиях
+        /// </summary>
+        public BuildingDataCollector GetBuildingData()
+        {
+            return DataUpdateTriggers?.GetDataCollector();
+        }
+        
+        /// <summary>
+        /// Получить статистику системы сбора данных
+        /// </summary>
+        public string GetDataStats()
+        {
+            var collector = GetBuildingData();
+            var triggers = DataUpdateTriggers;
+            
+            if (collector == null || triggers == null)
+            {
+                return "Data collection system not initialized";
+            }
+            
+            return $"Collector: {collector.GetDebugStats()}\n" +
+                   $"Triggers: {triggers.UpdateStats}\n" +
+                   $"Cache: {triggers.GetDataCache()?.CacheStats ?? "Not available"}";
+        }
+        
+        /// <summary>
+        /// Принудительно обновить данные
+        /// </summary>
+        public void ForceDataUpdate()
+        {
+            DataUpdateTriggers?.ForceUpdate();
+        }
+        
+        /// <summary>
         /// Очистить ресурсы
         /// </summary>
         public void Cleanup()
@@ -135,6 +192,16 @@ namespace JobsHousingBalance
                 _appState.OnOpacityChanged -= OnAppStateOpacityChanged;
                 
                 Debug.Log("JobsHousingBalance: OverlayManager unsubscribed from AppState events");
+            }
+            
+            if (_dataUpdateTriggers != null)
+            {
+                if (_dataUpdateTriggers.gameObject != null)
+                {
+                    Object.Destroy(_dataUpdateTriggers.gameObject);
+                }
+                _dataUpdateTriggers = null;
+                Debug.Log("JobsHousingBalance: DataUpdateTriggers destroyed");
             }
         }
         
@@ -148,6 +215,10 @@ namespace JobsHousingBalance
         private void OnAppStateModeChanged(AppState.Mode newMode)
         {
             OverlayRenderer.SetMode(newMode);
+            
+            // Смена режима требует обновления данных (Hex vs Districts)
+            DataUpdateTriggers?.MarkNonCriticalChanges();
+            
             Debug.Log($"JobsHousingBalance: OverlayManager - Mode changed to {newMode}");
         }
         
@@ -157,6 +228,10 @@ namespace JobsHousingBalance
         private void OnAppStateHexSizeChanged(AppState.HexSize newHexSize)
         {
             OverlayRenderer.SetHexSize(newHexSize);
+            
+            // Смена размера гекса требует обновления агрегации
+            DataUpdateTriggers?.MarkNonCriticalChanges();
+            
             Debug.Log($"JobsHousingBalance: OverlayManager - HexSize changed to {newHexSize}");
         }
         
@@ -166,6 +241,8 @@ namespace JobsHousingBalance
         private void OnAppStateOpacityChanged(float newOpacity)
         {
             OverlayRenderer.SetOpacity(newOpacity);
+            
+            // Изменение прозрачности не требует пересчета данных
             Debug.Log($"JobsHousingBalance: OverlayManager - Opacity changed to {newOpacity:F2}");
         }
         
