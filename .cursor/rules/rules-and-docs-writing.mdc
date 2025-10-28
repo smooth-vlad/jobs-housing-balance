@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+## General
+You should always keep docs (/docs) and cursor rules up to date.
+
+## Principles
+When writing docs and rules follow these principles:
+one of the goals of rules and docs are to make your work easier and more effecient. They should contain as minimal text as possible and should contain only things that will:
+- make you not do the same mistakes
+- know where to look for the information
+- know how to communicate with the user
+- know how to write the code
+- know how to solve tasks
+- know the project better
+- get required information faster
+
+## Organizing
+Try to split docs and rules to separate files - try to think of the best approach to organize them. Keep in mind that rules and docs almost always are reusable, and may be needed anytime, so try to write them in a way that it will be easily available at the time when you may need them.
+
+## Rules vs Docs
+- **Rules** = "как работать" (принципы, стиль, подходы)
+- **Docs** = "как решать" (конкретные решения, гайды, информация)

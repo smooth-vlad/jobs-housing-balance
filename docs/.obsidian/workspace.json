@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "TASKS.md",
+                "file": "api/research-methodology.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "TASKS"
+              "title": "research-methodology"
             }
           }
         ]
@@ -171,16 +171,41 @@
   },
   "active": "1b14fb39f62e620c",
   "lastOpenFiles": [
-    "Thinking process/Элементы управления в панели.md",
-    "TASKS.md",
-    "FUTURE_TASKS.md",
-    "Thinking process/Отображение панели.md",
-    "Thinking process/Клик на кнопку.md",
-    "Thinking process/Перемещение кнопки drag and drop.md",
-    "Thinking process",
-    "LESSONS_LEARNED.md",
-    "DEVELOPMENT.md",
+    "api/modding-api.md",
+    "api/game-api.md",
     "ARCHITECTURE.md",
-    "README.md"
+    "COMMON_MISTAKES.md",
+    "DEVELOPMENT.md",
+    "QUICK_START.md",
+    "README.md",
+    "RESEARCH_NOTES.md",
+    "TASKS.md",
+    "ui/README.md",
+    "api/research-methodology.md",
+    "api",
+    "ui/docs/api",
+    "ui/docs",
+    "ui/ui-textures.md",
+    "ui/ui-slider.md",
+    "ui/ui-panel.md",
+    "ui/ui-events.md",
+    "ui/ui-dropdown.md",
+    "ui/ui-drag-drop.md",
+    "ui/ui-coordinates.md",
+    "ui/api-research.md",
+    "ui/api-research.mdc",
+    "ui/ui-coordinates.mdc",
+    "ui/ui-textures.mdc",
+    "ui/ui-events.mdc",
+    "ui/ui-drag-drop.mdc",
+    "ui/ui-panel.mdc",
+    "ui/ui-slider.mdc",
+    "UI_COMPONENTS.md",
+    "Thinking process/Клик на кнопку.md",
+    "Thinking process/Не выравнивается текст в drop-down.md",
+    "Thinking process/Отображение панели.md",
+    "Thinking process/Перемещение кнопки drag and drop.md",
+    "Thinking process/Прямоугольник какой то непонятный сверху справа у слайдера.md",
+    "Thinking process/Элементы управления в панели.md"
   ]
 }
