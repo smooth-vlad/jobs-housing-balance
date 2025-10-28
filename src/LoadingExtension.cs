@@ -8,10 +8,30 @@ namespace JobsHousingBalance
     public class LoadingExtension : LoadingExtensionBase
     {
         private IconButton iconButton;
+        private OverlayManager overlayManager;
 
         public override void OnLevelLoaded(LoadMode mode)
         {
             Debug.Log("JobsHousingBalance: Level loaded successfully");
+
+            // Initialize OverlayManager
+            try
+            {
+                overlayManager = OverlayManager.Instance;
+                if (overlayManager != null)
+                {
+                    overlayManager.Initialize();
+                    Debug.Log("JobsHousingBalance: OverlayManager initialized successfully");
+                }
+                else
+                {
+                    Debug.LogError("JobsHousingBalance: OverlayManager.Instance returned null");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("JobsHousingBalance: Error initializing OverlayManager: " + ex.Message);
+            }
 
             // Create icon button
             try
@@ -35,6 +55,13 @@ namespace JobsHousingBalance
         public override void OnLevelUnloading()
         {
             Debug.Log("JobsHousingBalance: Level unloading");
+
+            // Clean up OverlayManager
+            if (overlayManager != null)
+            {
+                overlayManager.Cleanup();
+                overlayManager = null;
+            }
 
             // Clean up icon button (this will also clean up its panel)
             if (iconButton != null)
