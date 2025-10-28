@@ -2,6 +2,7 @@ using ColossalFramework.UI;
 using UnityEngine;
 using System.IO;
 using System.Reflection;
+using JobsHousingBalance.UI.Panel;
 
 namespace JobsHousingBalance.UI
 {
@@ -18,6 +19,9 @@ namespace JobsHousingBalance.UI
         private Vector2 dragStartLocalInParent; // Mouse position in parent's local space at start
         private Vector2 dragStartRel;           // Starting button position
         private float _nextClickAt;             // Click cooldown timer
+        
+        // Panel reference
+        private MainPanel _panel;
 
         public static IconButton Create()
         {
@@ -349,7 +353,20 @@ namespace JobsHousingBalance.UI
         private void OnButtonActivated()
         {
             Debug.Log("[JobsHousingBalance] Button clicked!");
-            // TODO: Open panel (Task 9.4)
+            
+            // Create panel lazily on first click if it doesn't exist
+            if (_panel == null)
+            {
+                _panel = MainPanel.Create();
+                if (_panel == null)
+                {
+                    Debug.LogError("JobsHousingBalance: Failed to create MainPanel");
+                    return;
+                }
+            }
+            
+            // Toggle panel visibility
+            _panel.Toggle();
         }
         
         // Convert screen mouse pixels to parent's local coordinates
@@ -389,6 +406,13 @@ namespace JobsHousingBalance.UI
         
         public override void OnDestroy()
         {
+            // Clean up panel if it exists
+            if (_panel != null)
+            {
+                UnityEngine.Object.Destroy(_panel.gameObject);
+                _panel = null;
+            }
+            
             // Prevent "acceleration" from double subscriptions after reloads
             // Note: We're using override methods, not event subscriptions, so no cleanup needed
             base.OnDestroy();

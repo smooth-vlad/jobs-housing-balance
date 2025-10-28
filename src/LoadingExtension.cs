@@ -1,6 +1,7 @@
 using ICities;
 using UnityEngine;
 using JobsHousingBalance.UI;
+using JobsHousingBalance.UI.Panel;
 
 namespace JobsHousingBalance
 {
@@ -35,7 +36,7 @@ namespace JobsHousingBalance
         {
             Debug.Log("JobsHousingBalance: Level unloading");
 
-            // Clean up icon button
+            // Clean up icon button (this will also clean up its panel)
             if (iconButton != null)
             {
                 UnityEngine.Object.Destroy(iconButton.gameObject);
