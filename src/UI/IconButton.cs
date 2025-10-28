@@ -8,10 +8,14 @@ namespace JobsHousingBalance.UI
     public class IconButton : UIButton
     {
         private const int BUTTON_SIZE = 48;
+        private const float DragThreshold = 6f; // pixels: less than this = click, more = drag
         
         // Dragging state
         private bool isDragging = false;
-        private Vector3 dragOffset = Vector3.zero;
+        private float dragDistance = 0f;
+        private bool suppressNextClick = false;
+        private Vector2 dragStartLocalInParent; // Mouse position in parent's local space at start
+        private Vector2 dragStartRel;           // Starting button position
 
         public static IconButton Create()
         {
@@ -24,12 +28,16 @@ namespace JobsHousingBalance.UI
                     return null;
                 }
 
+                Debug.Log($"JobsHousingBalance: UIView found - fixedSize: {uiView.fixedWidth}x{uiView.fixedHeight}");
+
                 var button = uiView.AddUIComponent(typeof(IconButton)) as IconButton;
                 if (button == null)
                 {
                     Debug.LogError("JobsHousingBalance: Failed to create IconButton");
                     return null;
                 }
+
+                Debug.Log($"JobsHousingBalance: Button created, parent: {button.parent?.name ?? "null"}, parent size: {button.parent?.size ?? Vector2.zero}");
 
                 return button;
             }
@@ -68,10 +76,10 @@ namespace JobsHousingBalance.UI
                 var padding = 300f;
                 var x = view.fixedWidth - size.x - padding;
                 var y = 10f;
-                absolutePosition = new Vector3(x, y);
+                relativePosition = new Vector3(x, y);
 
                 // Log position for debugging
-                Debug.Log("JobsHousingBalance: Button position: " + absolutePosition);
+                Debug.Log("JobsHousingBalance: Button position: " + relativePosition);
                 Debug.Log("JobsHousingBalance: Screen size: " + view.fixedWidth + "x" + view.fixedHeight);
                 Debug.Log("JobsHousingBalance: Button size: " + size);
 
@@ -223,7 +231,6 @@ namespace JobsHousingBalance.UI
             }
         }
 
-        private void AddTestBackground() { }
 
         private void AddFallbackLabel()
         {
@@ -255,10 +262,14 @@ namespace JobsHousingBalance.UI
             if (p.buttons == UIMouseButton.Left)
             {
                 isDragging = true;
-                // Get mouse position in UI space (relative to parent/UIView)
-                Vector2 mouseInUISpace = GetUIView().ScreenPointToGUI(p.position);
-                dragOffset = new Vector3(mouseInUISpace.x - relativePosition.x, mouseInUISpace.y - relativePosition.y, 0);
-                Debug.Log($"JobsHousingBalance: Start drag - p.pos: ({p.position.x:F1}, {p.position.y:F1}), mouseUI: ({mouseInUISpace.x:F1}, {mouseInUISpace.y:F1}), relPos: ({relativePosition.x:F1}, {relativePosition.y:F1}), offset: ({dragOffset.x:F1}, {dragOffset.y:F1})");
+                dragDistance = 0f;
+                dragStartRel = relativePosition;
+                dragStartLocalInParent = ScreenToParentLocal(Input.mousePosition);
+                
+                Debug.Log($"JobsHousingBalance: MouseDown - Input.mousePosition: {Input.mousePosition}, dragStartLocalInParent: {dragStartLocalInParent}, dragStartRel: {dragStartRel}");
+                
+                BringToFront();
+                p.Use();
             }
         }
 
@@ -266,40 +277,102 @@ namespace JobsHousingBalance.UI
         {
             base.OnMouseMove(p);
             
-            if (isDragging && p.buttons.IsFlagSet(UIMouseButton.Left))
+            if (!isDragging) return;
+            
+            // Current mouse position in parent's local space
+            Vector2 curLocal = ScreenToParentLocal(Input.mousePosition);
+            Vector2 delta = curLocal - dragStartLocalInParent;
+            
+            // Compensate for parent/ancestor scaling
+            if (parent != null)
             {
-                // Convert mouse screen position to UI space
-                Vector2 mouseInUISpace = GetUIView().ScreenPointToGUI(p.position);
-                
-                // Calculate new relative position
-                Vector3 newPosition = new Vector3(
-                    mouseInUISpace.x - dragOffset.x,
-                    mouseInUISpace.y - dragOffset.y,
-                    0
-                );
-                
-                // Constrain to screen bounds
-                var view = UIView.GetAView();
-                if (view != null)
-                {
-                    newPosition.x = Mathf.Clamp(newPosition.x, 0, view.fixedWidth - size.x);
-                    newPosition.y = Mathf.Clamp(newPosition.y, 0, view.fixedHeight - size.y);
-                }
-                
-                // Update relative position
-                relativePosition = newPosition;
+                var pr = parent.transform.lossyScale;
+                if (pr.x > 0.01f && pr.y > 0.01f) // More robust check for reasonable scale values
+                    delta = new Vector2(delta.x / pr.x, delta.y / pr.y);
             }
+            
+            Vector2 next = ClampToScreen(dragStartRel + delta);
+            
+            Debug.Log($"JobsHousingBalance: MouseMove - Input.mousePosition: {Input.mousePosition}, curLocal: {curLocal}, delta: {delta}, next: {next}, oldPos: {relativePosition}");
+            
+            relativePosition = next;
+            
+            // Accumulate distance to determine if this was a drag
+            dragDistance += delta.magnitude;
+            
+            p.Use();
         }
 
         protected override void OnMouseUp(UIMouseEventParameter p)
         {
             base.OnMouseUp(p);
             
-            if (isDragging)
+            if (!isDragging) return;
+            
+            isDragging = false;
+            
+            // If we actually dragged - suppress the next click
+            if (dragDistance > DragThreshold)
+                suppressNextClick = true;
+            
+            Debug.Log($"JobsHousingBalance: Drag ended, distance: {dragDistance}, position: {relativePosition}");
+            p.Use();
+        }
+        
+        protected override void OnClick(UIMouseEventParameter p)
+        {
+            if (suppressNextClick)
             {
-                isDragging = false;
-                Debug.Log("JobsHousingBalance: Drag ended, final position: " + absolutePosition);
+                // This was a drag - suppress the click
+                suppressNextClick = false;
+                p.Use();
+                return;
             }
+            
+            base.OnClick(p);
+            // TODO: Open panel here
+        }
+        
+        // Convert screen mouse pixels to parent's local coordinates
+        private Vector2 ScreenToParentLocal(Vector3 mouseScreen)
+        {
+            if (parent == null)
+            {
+                // If no parent, use UIView directly
+                var view = UIView.GetAView();
+                Vector2 guiPos1 = view.ScreenPointToGUI(mouseScreen);
+                return guiPos1; // UIView coordinates are already in the right space
+            }
+            
+            var parentView = parent.GetUIView();
+            Vector2 guiPos2 = parentView.ScreenPointToGUI(mouseScreen); // Accounts for DPI/retina/scaling
+            
+            // Convert GUI coordinates to parent's local coordinates
+            // Since UIComponent doesn't have ScreenToLocal, we'll use a simpler approach
+            Vector2 localPosition = guiPos2 - (Vector2)parent.relativePosition;
+            return localPosition;
+        }
+
+        private Vector2 ClampToScreen(Vector2 pos)
+        {
+            var ui = UIView.GetAView();
+            float maxX = Mathf.Max(0f, ui.fixedWidth - size.x);
+            float maxY = Mathf.Max(0f, ui.fixedHeight - size.y);
+            var clamped = new Vector2(Mathf.Clamp(pos.x, 0f, maxX), Mathf.Clamp(pos.y, 0f, maxY));
+            
+            if (pos != clamped)
+            {
+                Debug.Log($"JobsHousingBalance: Position clamped from {pos} to {clamped} (max: {maxX}, {maxY})");
+            }
+            
+            return clamped;
+        }
+        
+        public override void OnDestroy()
+        {
+            // Prevent "acceleration" from double subscriptions after reloads
+            // Note: We're using override methods, not event subscriptions, so no cleanup needed
+            base.OnDestroy();
         }
     }
 }
