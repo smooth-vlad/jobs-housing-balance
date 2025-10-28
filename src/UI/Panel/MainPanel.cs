@@ -256,8 +256,8 @@ namespace JobsHousingBalance.UI.Panel
                 var dropdown = row.AddUIComponent<UIDropDown>();
                 
                 // Configure dropdown
-                dropdown.items = new[] { "Small", "Medium", "Large" };
-                dropdown.selectedIndex = 1; // Default: Medium
+                dropdown.items = new[] { "64m", "128m", "256m", "512m" };
+                dropdown.selectedIndex = 1; // Default: 128m
                 dropdown.size = new Vector2(180f, 28f);
                 dropdown.listHeight = 180;
                 dropdown.itemHeight = 24;
@@ -346,10 +346,10 @@ namespace JobsHousingBalance.UI.Panel
                 // Create slider
                 var slider = sliderContainer.AddUIComponent<UISlider>();
                 slider.size = new Vector2(180f, 18f);
-                slider.minValue = 0f;
-                slider.maxValue = 100f;
-                slider.stepSize = 1f;
-                slider.value = 80f; // Default: 80%
+                slider.minValue = 0.1f;  // 10%
+                slider.maxValue = 0.8f;   // 80%
+                slider.stepSize = 0.01f;  // 1%
+                slider.value = 0.8f;      // Default: 80%
                 slider.clipChildren = true; // Prevent sprites from going outside bounds
                 
                 // BASE TRACK - use ScrollbarTrack for flat background (no effects)
@@ -374,14 +374,20 @@ namespace JobsHousingBalance.UI.Panel
                 // Event handler
                 slider.eventValueChanged += (component, value) =>
                 {
-                    Debug.Log($"JobsHousingBalance: Opacity changed to {value:F0}%");
+                    // Convert 0.1-0.8 range to percentage for display
+                    var percentage = Mathf.RoundToInt(value * 100f);
+                    Debug.Log($"JobsHousingBalance: Opacity changed to {value:F2} ({percentage}%)");
+                    
                     // Update value display
-                    valueLabel.text = $"{value:F0}%";
+                    valueLabel.text = $"{percentage}%";
+                    
                     // Update fill size
                     var currentFillPercent = (value - slider.minValue) / (slider.maxValue - slider.minValue);
                     fill.size = new Vector2(slider.size.x * currentFillPercent, slider.size.y);
+                    
                     // Update thumb position
                     thumb.relativePosition = new Vector2(slider.width * currentFillPercent - 6f, 0f);
+                    
                     // TODO: Update overlay opacity
                 };
             }
@@ -407,14 +413,13 @@ namespace JobsHousingBalance.UI.Panel
 
                 // Title
                 var title = legend.AddUIComponent<UILabel>();
-                title.text = "Legend (placeholder)";
+                title.text = "Legend";
                 title.textScale = 0.9f;
                 title.textColor = Color.white;
 
-                // Sample legend items
-                CreateLegendItem(legend, "InfoIconHappiness", "Hex cluster A", new Color32(100, 200, 100, 255));
-                CreateLegendItem(legend, "InfoIconHappiness", "Hex cluster B", new Color32(200, 100, 100, 255));
-                CreateLegendItem(legend, "InfoIconHappiness", "Hex cluster C", new Color32(100, 100, 200, 255));
+                // Legend items with correct colors and descriptions
+                CreateLegendItem(legend, "InfoIconHappiness", "Красный — нужны рабочие места (jobs < residents)", new Color32(255, 100, 100, 255));
+                CreateLegendItem(legend, "InfoIconHappiness", "Синий — нужно жильё (jobs > residents)", new Color32(100, 100, 255, 255));
             }
             catch (System.Exception ex)
             {
