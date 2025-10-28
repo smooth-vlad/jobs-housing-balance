@@ -50,6 +50,12 @@ namespace JobsHousingBalance.Data.Collector
         public int[] residentsByEdu;
         
         /// <summary>
+        /// Фактическая занятость по уровням образования (размер 4)
+        /// Индекс 0: uneducated, 1: educated, 2: well-educated, 3: highly-educated
+        /// </summary>
+        public int[] jobsOccupancyByEdu;
+        
+        /// <summary>
         /// Тип здания (жилое/коммерческое/промышленное/сервисное)
         /// </summary>
         public ItemClass.Service service;
@@ -85,6 +91,7 @@ namespace JobsHousingBalance.Data.Collector
             this.jobsCapacityTotal = 0;
             this.jobsCapacityByEdu = new int[4]; // uneducated, educated, well-educated, highly-educated
             this.residentsByEdu = new int[4];     // uneducated, educated, well-educated, highly-educated
+            this.jobsOccupancyByEdu = new int[4]; // uneducated, educated, well-educated, highly-educated
         }
         
         /// <summary>
@@ -108,6 +115,12 @@ namespace JobsHousingBalance.Data.Collector
                 eduInfo += $", ResidentsEdu=[{residentsByEdu[0]},{residentsByEdu[1]},{residentsByEdu[2]},{residentsByEdu[3]}]";
             }
             
+            if (jobsOccupancyByEdu != null && (jobsOccupancyByEdu[0] > 0 || jobsOccupancyByEdu[1] > 0 || 
+                jobsOccupancyByEdu[2] > 0 || jobsOccupancyByEdu[3] > 0))
+            {
+                eduInfo += $", OccupancyEdu=[{jobsOccupancyByEdu[0]},{jobsOccupancyByEdu[1]},{jobsOccupancyByEdu[2]},{jobsOccupancyByEdu[3]}]";
+            }
+            
             var typeInfo = "";
             if (IsServiceBuilding) typeInfo += ", Service";
             if (IsUniqueBuilding) typeInfo += ", Unique";
@@ -123,7 +136,7 @@ namespace JobsHousingBalance.Data.Collector
         public bool IsResidential => service == ItemClass.Service.Residential;
         
         /// <summary>
-        /// Проверить, является ли здание нежилым (коммерческое, промышленное, офисное, сервисное)
+        /// Проверить, является ли здание нежилым RICO (коммерческое, промышленное, офисное)
         /// </summary>
         public bool IsNonResidential => service != ItemClass.Service.Residential;
         
@@ -135,12 +148,37 @@ namespace JobsHousingBalance.Data.Collector
         /// <summary>
         /// Проверить, является ли здание сервисным
         /// </summary>
-        public bool IsServiceBuilding => false; // TODO: Implement proper service building detection
+        public bool IsServiceBuilding
+        {
+            get
+            {
+                return service == ItemClass.Service.Education ||
+                       service == ItemClass.Service.HealthCare ||
+                       service == ItemClass.Service.PoliceDepartment ||
+                       service == ItemClass.Service.FireDepartment ||
+                       service == ItemClass.Service.Garbage ||
+                       service == ItemClass.Service.Water ||
+                       service == ItemClass.Service.Electricity ||
+                       service == ItemClass.Service.PublicTransport ||
+                       service == ItemClass.Service.Monument ||
+                       service == ItemClass.Service.Beautification ||
+                       service == ItemClass.Service.Disaster ||
+                       service == ItemClass.Service.Tourism;
+            }
+        }
         
         /// <summary>
         /// Проверить, является ли здание уникальным
         /// </summary>
-        public bool IsUniqueBuilding => false; // TODO: Implement proper unique building detection
+        public bool IsUniqueBuilding
+        {
+            get
+            {
+                return service == ItemClass.Service.Monument ||
+                       service == ItemClass.Service.Beautification ||
+                       service == ItemClass.Service.Tourism;
+            }
+        }
         
         /// <summary>
         /// Получить общее количество жителей по всем уровням образования

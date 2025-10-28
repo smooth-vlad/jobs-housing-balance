@@ -2,6 +2,88 @@
 
 ## Реализованные компоненты
 
+### JobsCapacityCollector.cs
+**Расположение**: `src/Data/Collector/JobsCapacityCollector.cs`
+
+**Ключевые особенности**:
+- Сбор capacity данных через CalculateWorkplaceCount API методы
+- Поддержка всех типов RICO зданий (Commercial, Industrial, Office)
+- Трехуровневая стратегия для сервисных зданий: API → reflection → эвристика
+- Детекция Realistic Population 2 мода
+- Сбор фактической занятости по уровням образования
+
+**Технические детали**:
+```csharp
+// Использование реального API для capacity
+commercialAI.CalculateWorkplaceCount(level, randomizer, width, length, 
+    out int uneducated, out int educated, out int wellEducated, out int highlyEducated);
+
+// Трехуровневая стратегия для сервисных зданий
+private void GetServiceOrUniqueBuildingCapacityByEducation(PrefabAI prefabAI, ...)
+
+// Детекция RP2 мода по publishedFileID
+private bool DetectRP2Mod()
+```
+
+### EducationDataCollector.cs
+**Расположение**: `src/Data/Collector/EducationDataCollector.cs`
+
+**Ключевые особенности**:
+- Сбор данных об образовании жителей с кэшированием
+- Поддержка настройки IncludeTeens
+- Кэш с инвалидацией по времени (CacheInvalidationIntervalFrames)
+
+**Технические детали**:
+```csharp
+// Кэширование данных об образовании
+private Dictionary<ushort, EducationData> _educationCache;
+
+// Определение работоспособного возраста
+private bool IsWorkingAge(Citizen citizen, bool includeTeens)
+```
+
+### CitizenEducationHelper.cs
+**Расположение**: `src/Data/Collector/CitizenEducationHelper.cs`
+
+**Ключевые особенности**:
+- Централизованная логика определения образования граждан
+- Кэширование результатов reflection для производительности
+- Множественные fallback стратегии для определения образования
+- Определение рабочего здания гражданина
+
+**Технические детали**:
+```csharp
+// Кэш reflection результатов
+private static PropertyInfo _educationLevelProperty;
+private static FieldInfo _educationLevelField;
+// ... другие поля
+
+// Множественные стратегии определения образования
+public static int GetCitizenEducationLevel(Citizen citizen)
+```
+
+### BuildingDataCollector.cs (обновлен)
+**Расположение**: `src/Data/Collector/BuildingDataCollector.cs`
+
+**Ключевые изменения**:
+- RICO-only фильтрация зданий
+- Усиленная валидация с исключением технических объектов
+- Диагностика типов зданий
+- Интеграция новых коллекторов
+
+**Технические детали**:
+```csharp
+// RICO фильтрация
+private bool IsRicoBuilding(ItemClass.Service service, ItemClass.SubService subService)
+
+// Усиленная валидация
+if ((building.m_flags & (Building.Flags.Untouchable | Building.Flags.Hidden | ...)) != 0) return false;
+if (building.m_parentBuilding != 0) return false; // исключаем sub-buildings
+
+// Диагностика
+private void LogBuildingTypeDiagnostics()
+```
+
 ### IconButton.cs
 **Расположение**: `src/UI/IconButton.cs`
 

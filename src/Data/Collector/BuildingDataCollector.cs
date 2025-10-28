@@ -18,6 +18,8 @@ namespace JobsHousingBalance.Data.Collector
         private int _lastUpdatedFrame;
         private int _totalResidents;
         private int _totalJobs;
+        private JobsCapacityCollector _capacityCollector;
+        private EducationDataCollector _educationCollector;
         
         // Константы для производительности
         private const int UpdateIntervalFrames = 256; // Обновление каждые ~5-10 секунд
@@ -87,6 +89,8 @@ namespace JobsHousingBalance.Data.Collector
             _lastUpdatedFrame = 0;
             _totalResidents = 0;
             _totalJobs = 0;
+            _capacityCollector = new JobsCapacityCollector();
+            _educationCollector = new EducationDataCollector();
             
             Debug.Log("JobsHousingBalance: BuildingDataCollector initialized");
         }
@@ -159,10 +163,37 @@ namespace JobsHousingBalance.Data.Collector
             var residential = samples.Count(s => s.IsResidential);
             var nonResidential = samples.Count(s => s.IsNonResidential);
             var withBalance = samples.Count(s => s.HasSignificantBalance);
+            var withCapacity = samples.Count(s => s.HasCapacityData);
             
             return $"Buildings: {samples.Count} total ({residential} residential, {nonResidential} non-residential), " +
-                   $"With balance: {withBalance}, Residents: {_totalResidents}, Jobs: {_totalJobs}, " +
-                   $"Balance: {TotalBalance}, Last update: frame {_lastUpdatedFrame}";
+                   $"With balance: {withBalance}, With capacity: {withCapacity}, Residents: {_totalResidents}, Jobs: {_totalJobs}, " +
+                   $"Balance: {TotalBalance}, Last update: frame {_lastUpdatedFrame}, " +
+                   $"RP2: {(_capacityCollector.IsRP2Active() ? "Detected" : "Not detected")}, " +
+                   $"Education cache: {_educationCollector.GetCacheStats()}";
+        }
+        
+        /// <summary>
+        /// Получить информацию о Realistic Population 2 моде
+        /// </summary>
+        public bool IsRP2Active()
+        {
+            return _capacityCollector.IsRP2Active();
+        }
+        
+        /// <summary>
+        /// Получить статистику кэша емкости
+        /// </summary>
+        public string GetCapacityCacheStats()
+        {
+            return _capacityCollector.GetCacheStats();
+        }
+        
+        /// <summary>
+        /// Получить статистику кэша образования
+        /// </summary>
+        public string GetEducationCacheStats()
+        {
+            return _educationCollector.GetCacheStats();
         }
         
         #endregion
@@ -197,6 +228,10 @@ namespace JobsHousingBalance.Data.Collector
                 
                 Debug.Log($"JobsHousingBalance: Starting data collection - Buildings: {buildingCount}, CitizenUnits: {citizenUnitCount}");
                 
+                // Обновляем кэши, если необходимо
+                _capacityCollector.UpdateCacheIfNeeded();
+                _educationCollector.UpdateCacheIfNeeded();
+                
                 _buildingSamples.Clear();
                 _totalResidents = 0;
                 _totalJobs = 0;
@@ -204,7 +239,7 @@ namespace JobsHousingBalance.Data.Collector
                 var processedBuildings = 0;
                 var skippedBuildings = 0;
                 
-                // Итерация по всем зданиям
+                // Итерация по всем зданиям с чанковой обработкой
                 for (ushort buildingId = 1; buildingId < buildingCount; buildingId++)
                 {
                     var building = buildings.m_buffer[buildingId];
@@ -225,11 +260,12 @@ namespace JobsHousingBalance.Data.Collector
                     
                     processedBuildings++;
                     
-                    // Ограничиваем количество зданий за кадр для производительности
+                    // Чанковая обработка для производительности - каждые 50 зданий
                     if (processedBuildings % MaxBuildingsPerFrame == 0)
                     {
                         // В реальной реализации здесь можно было бы использовать корутины
                         // или разбить на несколько кадров, но для MVP делаем все сразу
+                        // В будущем можно добавить yield return null для пропуска кадров
                     }
                 }
                 
@@ -240,6 +276,9 @@ namespace JobsHousingBalance.Data.Collector
                 Debug.Log($"JobsHousingBalance: Data collection completed in {duration.TotalMilliseconds:F1}ms. " +
                          $"Processed: {processedBuildings}, Skipped: {skippedBuildings}, " +
                          $"Total residents: {_totalResidents}, Total jobs: {_totalJobs}");
+                
+                // Диагностика типов зданий
+                LogBuildingTypeDiagnostics();
                 
                 Debug.Log($"JobsHousingBalance: Debug stats - {GetDebugStats()}");
             }
@@ -252,6 +291,7 @@ namespace JobsHousingBalance.Data.Collector
         
         /// <summary>
         /// Проверить, является ли здание валидным для обработки
+        /// Фильтрует только RICO здания (Residential, Commercial, Industrial, Office)
         /// </summary>
         private bool IsValidBuilding(Building building)
         {
@@ -262,17 +302,69 @@ namespace JobsHousingBalance.Data.Collector
             // Проверяем наличие информации о здании
             if (building.Info == null) return false;
             
+            // Исключаем технические флаги
+            if ((building.m_flags & (Building.Flags.Untouchable | 
+                                   Building.Flags.Hidden | 
+                                   Building.Flags.Upgrading | 
+                                   Building.Flags.Downgrading | 
+                                   Building.Flags.Collapsed | 
+                                   Building.Flags.Abandoned | 
+                                   Building.Flags.Evacuating)) != 0) return false;
+            
+            // Исключаем sub-buildings (дочерние здания)
+            if (building.m_parentBuilding != 0) return false;
+            
             // Исключаем внешние соединения (Outside Connections)
             if (building.Info.GetAI() is OutsideConnectionAI) return false;
             
-            // Убираем проверку на m_citizenUnits == 0, так как это может быть валидным состоянием
-            // для новых зданий или зданий без жителей/рабочих мест
+            // Проверяем, что это RICO здание
+            var service = building.Info.GetService();
+            if (!IsRicoBuilding(service, building.Info.GetSubService())) return false;
+            
+            // Дополнительная валидация: проверяем корректность позиции
+            if (building.m_position.x < -8192f || building.m_position.x > 8192f ||
+                building.m_position.z < -8192f || building.m_position.z > 8192f)
+            {
+                Debug.LogWarning($"JobsHousingBalance: Building has invalid position: {building.m_position}");
+                return false;
+            }
+            
+            // Проверяем корректность уровня здания
+            if (building.m_level < 0 || building.m_level > 5)
+            {
+                Debug.LogWarning($"JobsHousingBalance: Building has invalid level: {building.m_level}");
+                return false;
+            }
             
             return true;
         }
         
         /// <summary>
-        /// Проверить, является ли здание жилым
+        /// Проверить, является ли здание RICO зданием (Residential, Commercial, Industrial, Office)
+        /// </summary>
+        private bool IsRicoBuilding(ItemClass.Service service, ItemClass.SubService subService)
+        {
+            switch (service)
+            {
+                case ItemClass.Service.Residential:
+                    return true; // Все жилые здания
+                    
+                case ItemClass.Service.Commercial:
+                    return true; // Все коммерческие здания
+                    
+                case ItemClass.Service.Industrial:
+                    return true; // Все промышленные здания
+                    
+                case ItemClass.Service.Office:
+                    return true; // Все офисные здания
+                    
+                default:
+                    return false; // Все остальные сервисы исключаем
+            }
+        }
+        
+        /// <summary>
+        /// Проверить, является ли здание жилым (RICO)
         /// </summary>
         private bool IsResidentialBuilding(BuildingInfo info)
         {
@@ -283,7 +375,7 @@ namespace JobsHousingBalance.Data.Collector
         }
         
         /// <summary>
-        /// Проверить, является ли здание коммерческим
+        /// Проверить, является ли здание коммерческим (RICO)
         /// </summary>
         private bool IsCommercialBuilding(BuildingInfo info)
         {
@@ -294,7 +386,7 @@ namespace JobsHousingBalance.Data.Collector
         }
         
         /// <summary>
-        /// Проверить, является ли здание промышленным
+        /// Проверить, является ли здание промышленным (RICO)
         /// </summary>
         private bool IsIndustrialBuilding(BuildingInfo info)
         {
@@ -305,7 +397,7 @@ namespace JobsHousingBalance.Data.Collector
         }
         
         /// <summary>
-        /// Проверить, является ли здание офисным
+        /// Проверить, является ли здание офисным (RICO)
         /// </summary>
         private bool IsOfficeBuilding(BuildingInfo info)
         {
@@ -314,7 +406,8 @@ namespace JobsHousingBalance.Data.Collector
             var service = info.GetService();
             var subService = info.GetSubService();
             
-            // Офисы могут быть как Commercial, так и Industrial с определенными SubService
+            // Офисы могут быть Commercial с SubService CommercialHigh
+            // или Industrial с SubService IndustrialGeneric (IT кластер)
             return (service == ItemClass.Service.Commercial && subService == ItemClass.SubService.CommercialHigh) ||
                    (service == ItemClass.Service.Industrial && subService == ItemClass.SubService.IndustrialGeneric);
         }
@@ -399,8 +492,35 @@ namespace JobsHousingBalance.Data.Collector
                 Debug.LogWarning($"JobsHousingBalance: Maximum iterations reached for building {buildingId}, possible infinite loop");
             }
             
-            return new BuildingSample(buildingId, position, districtId, 
+            // Получаем данные о емкости рабочих мест
+            var capacityData = _capacityCollector.GetCapacityData(buildingId, building, info);
+            
+            // Получаем данные об образовании жителей
+            var educationData = _educationCollector.GetEducationData(buildingId, building, info, citizenUnits);
+            
+            // Получаем фактическую занятость по уровням образования
+            var occupancyByEdu = _capacityCollector.GetJobsOccupancyByEducation(buildingId, building, info, citizenUnits);
+            
+            // Валидация полученных данных
+            ValidateCapacityData(capacityData, buildingId);
+            ValidateEducationData(educationData, buildingId);
+            ValidateOccupancyData(occupancyByEdu, buildingId);
+            
+            // Создаем BuildingSample с данными о емкости и образовании
+            var sample = new BuildingSample(buildingId, position, districtId, 
                                     residentsFact, jobsFact, service, subService);
+            
+            // Заполняем данные о емкости
+            sample.jobsCapacityTotal = capacityData.jobsCapacityTotal;
+            sample.jobsCapacityByEdu = capacityData.jobsCapacityByEdu;
+            
+            // Заполняем данные об образовании жителей
+            sample.residentsByEdu = educationData.residentsByEdu;
+            
+            // Заполняем данные о фактической занятости по образованию
+            sample.jobsOccupancyByEdu = occupancyByEdu;
+            
+            return sample;
         }
         
         /// <summary>
@@ -418,6 +538,158 @@ namespace JobsHousingBalance.Data.Collector
             if (citizenUnit.m_citizen4 != 0) count++;
             
             return count;
+        }
+        
+        /// <summary>
+        /// Логировать диагностику типов зданий для понимания что попадает в подсчет
+        /// </summary>
+        private void LogBuildingTypeDiagnostics()
+        {
+            try
+            {
+                // Подсчет по типам RICO
+                var residentialCount = 0;
+                var commercialCount = 0;
+                var industrialCount = 0;
+                var officeCount = 0;
+                
+                // Подсчет по сервисам (для понимания что исключается)
+                var serviceCounts = new System.Collections.Generic.Dictionary<ItemClass.Service, int>();
+                
+                foreach (var sample in _buildingSamples)
+                {
+                    switch (sample.service)
+                    {
+                        case ItemClass.Service.Residential:
+                            residentialCount++;
+                            break;
+                        case ItemClass.Service.Commercial:
+                            commercialCount++;
+                            break;
+                        case ItemClass.Service.Industrial:
+                            industrialCount++;
+                            break;
+                        case ItemClass.Service.Office:
+                            officeCount++;
+                            break;
+                        default:
+                            // Подсчитываем исключенные сервисы
+                            if (!serviceCounts.ContainsKey(sample.service))
+                                serviceCounts[sample.service] = 0;
+                            serviceCounts[sample.service]++;
+                            break;
+                    }
+                }
+                
+                Debug.Log($"JobsHousingBalance: RICO Buildings - " +
+                         $"Residential: {residentialCount}, Commercial: {commercialCount}, " +
+                         $"Industrial: {industrialCount}, Office: {officeCount}");
+                
+                if (serviceCounts.Count > 0)
+                {
+                    var excludedServices = string.Join(", ", serviceCounts.Select(kvp => $"{kvp.Key}: {kvp.Value}").ToArray());
+                    Debug.Log($"JobsHousingBalance: Excluded services: {excludedServices}");
+                }
+                
+                // Дополнительная диагностика: проверяем общее количество зданий в буфере
+                var buildingManager = BuildingManager.instance;
+                var totalBuildingsInBuffer = 0;
+                var validRicoBuildings = 0;
+                var excludedBuildings = 0;
+                
+                for (ushort i = 1; i < buildingManager.m_buildings.m_size; i++)
+                {
+                    var building = buildingManager.m_buildings.m_buffer[i];
+                    if ((building.m_flags & Building.Flags.Created) != 0)
+                    {
+                        totalBuildingsInBuffer++;
+                        
+                        if (IsValidBuilding(building))
+                        {
+                            validRicoBuildings++;
+                        }
+                        else
+                        {
+                            excludedBuildings++;
+                        }
+                    }
+                }
+                
+                Debug.Log($"JobsHousingBalance: Building buffer analysis - " +
+                         $"Total in buffer: {totalBuildingsInBuffer}, " +
+                         $"Valid RICO: {validRicoBuildings}, " +
+                         $"Excluded: {excludedBuildings}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"JobsHousingBalance: Error in building type diagnostics: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Валидировать данные о емкости рабочих мест
+        /// </summary>
+        private void ValidateCapacityData(JobsCapacityCollector.CapacityData capacityData, ushort buildingId)
+        {
+            // Проверяем корректность общей емкости
+            if (capacityData.jobsCapacityTotal < 0)
+            {
+                Debug.LogWarning($"JobsHousingBalance: Building {buildingId} has negative total capacity: {capacityData.jobsCapacityTotal}");
+            }
+            
+            // Проверяем корректность распределения по образованию
+            if (capacityData.jobsCapacityByEdu != null)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    if (capacityData.jobsCapacityByEdu[i] < 0)
+                    {
+                        Debug.LogWarning($"JobsHousingBalance: Building {buildingId} has negative capacity for education level {i}: {capacityData.jobsCapacityByEdu[i]}");
+                    }
+                }
+                
+                // Проверяем, что сумма по уровням образования не превышает общую емкость
+                var sumByEdu = capacityData.jobsCapacityByEdu[0] + capacityData.jobsCapacityByEdu[1] + 
+                              capacityData.jobsCapacityByEdu[2] + capacityData.jobsCapacityByEdu[3];
+                if (sumByEdu > capacityData.jobsCapacityTotal + 10) // Допускаем небольшую погрешность
+                {
+                    Debug.LogWarning($"JobsHousingBalance: Building {buildingId} capacity by education ({sumByEdu}) exceeds total capacity ({capacityData.jobsCapacityTotal})");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Валидировать данные об образовании жителей
+        /// </summary>
+        private void ValidateEducationData(EducationDataCollector.EducationData educationData, ushort buildingId)
+        {
+            if (educationData.residentsByEdu != null)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    if (educationData.residentsByEdu[i] < 0)
+                    {
+                        Debug.LogWarning($"JobsHousingBalance: Building {buildingId} has negative residents for education level {i}: {educationData.residentsByEdu[i]}");
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Валидировать данные о фактической занятости по образованию
+        /// </summary>
+        private void ValidateOccupancyData(int[] occupancyByEdu, ushort buildingId)
+        {
+            if (occupancyByEdu != null)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    if (occupancyByEdu[i] < 0)
+                    {
+                        Debug.LogWarning($"JobsHousingBalance: Building {buildingId} has negative occupancy for education level {i}: {occupancyByEdu[i]}");
+                    }
+                }
+            }
         }
         
         #endregion
